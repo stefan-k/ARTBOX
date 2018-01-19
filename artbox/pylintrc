@@ -1,0 +1,6 @@
+[BASIC]
+good-names=u,v,inner_cg_rhs_func,EHs,update_m_func,update_m_double_func,m,_m,op,x,y,i,dy,dx,N,k,block_size_x,block_size_y,block,add_scaled_vector_func,add_scaled_vector_double_func,add_scaled_vector_vector_func,add_scaled_vector_vector_double_func,sub_scaled_vector_func,sub_scaled_vector_double_func,inplace_mul,sens_mul_func,conj_sens_mul_func,slice_coil_func,x_sn_mul_func,sn,Nd,Kd,arr_pad_func,fill_v_func,tgv_update_u,tgv_update_u2,tgv_update_u_func,tgv_update_v_func,tgv_update_p_func,tgv_update_q_func,tgv_update_w_func,tgv_update_u_,tgv_update_u_2,tgv_update_w_,tgv_update_w_2,w,p,q,Ku,f,_multiply_E_m_func,_multiply_EH_m_func,_,ut,vt,Kadv,n_Ku,,n_Kadv,kp
+
+[TYPECHECK]
+ignored-modules = numpy,pycuda.driver
+extension-pkg-whitelist=numpy,pycuda.driver

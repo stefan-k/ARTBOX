@@ -1,0 +1,7 @@
+*.pyc
+src/*.pyc
+*.mat
+src/*.mat
+src/run_stuff
+*.egg
+*.tar.gz

@@ -1,0 +1,8 @@
+*.pyc
+.*.swp
+.coverage
+.results
+*/.*.swp
+data
+results
+nufft
