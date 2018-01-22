@@ -4,16 +4,26 @@
 
 This piece of software is for *research use only* and *not for diagnostic use*!
 
+For detailed information about usage and the API, please see the [Documentation](https://stefan-k.github.io/ARTBOX/)
 
 ## Installation
 
+### Requirements
+
+### Setup
+
+```console
+$ git clone git@github.com:stefan-k/ARTBOX.git
+$ cd ARTBOX
+```
 
 ## Usage
 
 For detailed information take a look at the help message:
 
+```console
 $ artbox/artbox.py --help
-
+```
 
 ## Examples
 
