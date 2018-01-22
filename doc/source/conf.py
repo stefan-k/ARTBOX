@@ -98,6 +98,15 @@ html_theme = 'alabaster'
 # documentation.
 #
 # html_theme_options = {}
+html_theme_options = {
+    'github_user': 'stefan-k',
+    'github_repo': 'ARTBOX',
+    'github_button': 'true',
+    'github_banner': 'true',
+    'description': 'Accelerated Reconstruction Toolbox for MRI',
+    'page_width': '960px',
+    'font_size': '14px',
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
