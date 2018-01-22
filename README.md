@@ -59,6 +59,17 @@ The struct *must* be called `S` and it must be saved in the 'v7' format in Matla
 save('data.mat', 'S', '-v7');
 ```
 
+## Related software
+
+* [AGILE](https://github.com/IMTtugraz/AGILE)
+* [AVIONIC](https://github.com/IMTtugraz/AVIONIC)
+* [bart](https://mrirecon.github.io/bart/)
+* [Gadgetron](https://gadgetron.github.io)
+* [gpuNUFFT](https://github.com/andyschwarzl/gpuNUFFT)
+* [MIRT](https://web.eecs.umich.edu/~fessler/code)
+* [Impatient-MRI](https://github.com/JiadingGai/Impatient-MRI)
+* ... and probably many more.
+
 ## Contact
 
 [Github Issues.](https://github.com/stefan-k/ARTBOX/issues)
