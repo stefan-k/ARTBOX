@@ -4,13 +4,35 @@
 
 This piece of software is for *research use only* and *not for diagnostic use*!
 
+ARTBOX is a fast image reconstruction toolbox for magnetic resonance imaging (MRI).
+
+Features:
+
+* Conjugate gradients solver.
+* Chambolle-Pock solver for Total Generalized Variation (TGV) regularized problems. (Based on code by [Kristian Bredies](https://imsc.uni-graz.at/bredies/index.html).)
+* Modified Chambolle-Pock solver for TGV regularized problems called TGV-CG.
+* Uses the full encoding matrix as forward model. Therefore it is easy to include B0 inhomogeneities, non-Cartesian trajectories and nonlinear SEMs (spatially encoding magnetic fields, also called gradients).
+* All operations heavily accelerated with GPU code using pycuda. 
+* Modular design. Use the accelerated operators to implement your own algorithms (and ideally issue a pull request).
+
 For detailed information about usage and the API, please see the [Documentation](https://stefan-k.github.io/ARTBOX/)
 
 ## Installation
 
 ### Requirements
 
+Python modules:
+* scipy
+* numpy
+* progressbar
+* Pillow
+* pycuda
+* argparse
+* Sphinx (optional, only to build docs)
+
 ### Setup
+
+To install ARTBOX, simply clone the repository and `cd` into the directory.
 
 ```console
 $ git clone git@github.com:stefan-k/ARTBOX.git
