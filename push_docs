@@ -1,0 +1,31 @@
+#!/usr/bin/bash
+
+# Make temporary folder
+rm -rf .doc_tmp
+mkdir .doc_tmp
+cd .doc_tmp
+
+# initialize git repository
+git init
+
+# copy documentation
+cp -r ../doc/build/html/* .
+touch .nojekyll
+
+# add and commit all
+git add -f --all .
+git add -f --all .*
+git commit -m 'Semiautomatic update of documentation'
+
+# checkout gh-pages
+git checkout -b gh-pages
+
+# add remote
+git remote add origin git@github.com:stefan-k/ARTBOX.git
+
+# push
+git push -f origin gh-pages
+
+# remove temporary directory
+cd ..
+rm -rf .doc_tmp
