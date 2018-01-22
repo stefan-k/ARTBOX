@@ -19,6 +19,8 @@
 #
 import os
 import sys
+# SK: Order is important here!
+sys.path.insert(0, os.path.abspath('../../artbox'))
 sys.path.insert(0, os.path.abspath('../..'))
 
 
@@ -207,4 +209,11 @@ epub_copyright = copyright
 epub_exclude_files = ['search.html']
 
 # -- Mock objects ---------------------------------------------------------
-autodoc_mock_imports = ['pycuda.autoinit']
+autodoc_mock_imports = ['pycuda.autoinit',
+                        'parser',
+                        'pycuda.gpuarray',
+                        'pycuda.compiler',
+                        'pycuda.elementwise',
+                        'numpy',
+                        'argparse',
+                       ]
