@@ -108,10 +108,9 @@ def main():
             import pycuda.gpuarray as gpuarray
             import numpy as np
             from tools import save_matlab
-            result = gpuarray.zeros([data.k_res, data.n_coils], np.complex64,
+            result = gpuarray.zeros([data.nT, data.nC], np.complex64,
                                     order='F')
-            op.apply(gpuarray.to_gpu(data.object.astype(np.complex64)),
-                       result)
+            op.apply(gpuarray.to_gpu(data.object.astype(np.complex64)), result)
 
             if args.time:
                 print("Runtime for file " + dfile + ": " +

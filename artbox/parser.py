@@ -42,7 +42,7 @@ reconpar.add_argument("-i",
                       "--iters",
                       help="Number of iterations",
                       type=int,
-                      default=500)
+                      default=50)
 reconpar.add_argument("-ii",
                       "--inner-iters",
                       help="Number of inner CG iterations (default: 20)",

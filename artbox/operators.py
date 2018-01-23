@@ -342,7 +342,8 @@ class Operator(object):
         self.dgpu['k'] = gpuarray.to_gpu(data.k)
         self.dgpu['c_mat'] = gpuarray.to_gpu(data.c_mat)
         self.dgpu['psi'] = gpuarray.to_gpu(data.psi)
-        self.dgpu['recondata'] = gpuarray.to_gpu(data.recondata)
+        if data.recondata is not None:
+            self.dgpu['recondata'] = gpuarray.to_gpu(data.recondata)
 
         if data.b0 is None:
             self._b0_provided = ''

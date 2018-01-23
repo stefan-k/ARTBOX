@@ -316,6 +316,8 @@ def load_matlab_dataset(filename, double=False):
     try:
         # aquired data
         recondata = np.array(mat.recondata)
+        recondata /= np.abs(recondata).max()
+        data.set_recondata(recondata)
     except:
         print('Seems like you are trying to simulate?')
         try:
@@ -325,6 +327,4 @@ def load_matlab_dataset(filename, double=False):
         except:
             print('ERROR: Either recondata or object needs to be provided!')
             exit()
-    recondata /= np.abs(recondata).max()
-    data.set_recondata(recondata)
     return data
