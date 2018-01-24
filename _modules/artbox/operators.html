@@ -1,0 +1,672 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>artbox.operators &#8212; ARTBOX 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for artbox.operators</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright 2018 Stefan Kroboth</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 &lt;LICENSE-APACHE or</span>
+<span class="c1"># http://apache.org/licenses/LICENSE-2.0&gt; or the MIT license &lt;LICENSE-MIT or</span>
+<span class="c1"># http://opensource.org/licenses/MIT&gt;, at your option. This file may not be</span>
+<span class="c1"># copied, modified, or distributed except according to those terms.</span>
+<span class="sd">&quot;&quot;&quot;Encoding matrix Operator.</span>
+
+<span class="sd">`Operator` object which provides a forward operator (`apply`) and an adjoint</span>
+<span class="sd">operator (`adjoint`) which implement operations with the encoding matrix.</span>
+
+<span class="sd">Author: Stefan Kroboth &lt;stefan.kroboth@gmail.com&gt;</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># pylint: disable=relative-import</span>
+<span class="c1"># pylint: disable=too-many-instance-attributes</span>
+<span class="c1"># pylint: disable=too-many-arguments</span>
+<span class="c1"># pylint: disable=too-many-branches</span>
+<span class="c1"># pylint: disable=too-many-statements</span>
+<span class="c1"># pylint: disable=too-many-locals</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">pycuda.gpuarray</span> <span class="k">as</span> <span class="nn">gpuarray</span>
+<span class="kn">import</span> <span class="nn">pycuda.compiler</span> <span class="k">as</span> <span class="nn">compiler</span>
+<span class="kn">import</span> <span class="nn">pycuda.curandom</span> <span class="k">as</span> <span class="nn">curandom</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">tools</span> <span class="k">import</span> <span class="n">next_power_of_2</span><span class="p">,</span> <span class="n">gpuarray_copy</span><span class="p">,</span> <span class="n">dotc_gpu</span>
+
+<span class="n">KERNELS</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">  #include &lt;pycuda-complex.hpp&gt;</span>
+
+<span class="s2">  typedef pycuda::complex&lt;</span><span class="si">%(PRECISION)s</span><span class="s2">&gt; complex;</span>
+<span class="s2">  //typedef pycuda::complex&lt;float&gt; complex_float;</span>
+<span class="s2">  //typedef pycuda::complex&lt;double&gt; complex_double;</span>
+
+<span class="s2">  </span><span class="si">%(G_MAT_PROVIDED)s</span><span class="s2"></span>
+<span class="s2">  </span><span class="si">%(B0_MAT_PROVIDED)s</span><span class="s2"></span>
+
+<span class="s2">  __device__ complex sinc(</span><span class="si">%(PRECISION)s</span><span class="s2"> x)</span>
+<span class="s2">  {</span>
+<span class="s2">    complex out;</span>
+<span class="s2">    //if(abs(x) &lt;= 1e-8)</span>
+<span class="s2">    if(x == 0)</span>
+<span class="s2">    {</span>
+<span class="s2">      out = 1.0;</span>
+<span class="s2">    }</span>
+<span class="s2">    else</span>
+<span class="s2">    {</span>
+<span class="s2">      out = sin(x)/x;</span>
+<span class="s2">    }</span>
+<span class="s2">    return out;</span>
+<span class="s2">  }</span>
+
+<span class="s2">  __device__ complex phi_elem(unsigned iK, unsigned iP, </span><span class="si">%(PRECISION)s</span><span class="s2">* k_mat,</span>
+<span class="s2">                              </span><span class="si">%(PRECISION)s</span><span class="s2">* psi_mat, </span><span class="si">%(PRECISION)s</span><span class="s2">* g_mat,</span>
+<span class="s2">                              </span><span class="si">%(PRECISION)s</span><span class="s2">* b0, </span><span class="si">%(PRECISION)s</span><span class="s2">* ktime)</span>
+<span class="s2">  {</span>
+<span class="s2">    </span><span class="si">%(PRECISION)s</span><span class="s2"> temp = 0;</span>
+<span class="s2">//  #ifdef G_MAT</span>
+<span class="s2">//    </span><span class="si">%(PRECISION)s</span><span class="s2"> row1 = 0;</span>
+<span class="s2">//    </span><span class="si">%(PRECISION)s</span><span class="s2"> row2 = 0;</span>
+<span class="s2">//    </span><span class="si">%(PRECISION)s</span><span class="s2"> row3 = 0;</span>
+<span class="s2">//  #endif</span>
+<span class="s2">    complex result(0.0,0.0);</span>
+<span class="s2">    if(iP &lt; </span><span class="si">%(P_RES)s</span><span class="s2"> &amp;&amp; iK &lt; </span><span class="si">%(K_RES)s</span><span class="s2">)</span>
+<span class="s2">    {</span>
+<span class="s2">      for(int i = 0; i &lt; </span><span class="si">%(NUM_SEM)s</span><span class="s2">; i++)</span>
+<span class="s2">      {</span>
+<span class="s2">        temp += k_mat[iK + i * </span><span class="si">%(K_RES)s</span><span class="s2">] * psi_mat[iP + i * </span><span class="si">%(P_RES)s</span><span class="s2">];</span>
+<span class="s2">//  #ifdef G_MAT</span>
+<span class="s2">//        row1 += k_mat[iK + i * </span><span class="si">%(K_RES)s</span><span class="s2">]</span>
+<span class="s2">//                * g_mat[iP + i * </span><span class="si">%(P_RES)s</span><span class="s2">];</span>
+<span class="s2">//        row2 += k_mat[iK + i * </span><span class="si">%(K_RES)s</span><span class="s2">]</span>
+<span class="s2">//                * g_mat[iP + i * </span><span class="si">%(P_RES)s</span><span class="s2"> +     </span><span class="si">%(P_RES)s</span><span class="s2"> * </span><span class="si">%(NUM_SEM)s</span><span class="s2">];</span>
+<span class="s2">//        row3 += k_mat[iK + i * </span><span class="si">%(K_RES)s</span><span class="s2">]</span>
+<span class="s2">//                * g_mat[iP + i * </span><span class="si">%(P_RES)s</span><span class="s2"> + 2 * </span><span class="si">%(P_RES)s</span><span class="s2"> * </span><span class="si">%(NUM_SEM)s</span><span class="s2">];</span>
+<span class="s2">//  #endif</span>
+<span class="s2">      }</span>
+<span class="s2">//  #ifdef B0_MAT</span>
+<span class="s2">//      </span><span class="si">%(PRECISION)s</span><span class="s2"> b0_c = b0[iP] * ktime[iK];</span>
+<span class="s2">//  #endif</span>
+<span class="s2">//  #ifdef G_MAT</span>
+<span class="s2">//      result = complex(cos(temp), sin(-temp)) * sinc(</span><span class="si">%(W1)s</span><span class="s2"> * row1)</span>
+<span class="s2">//               * sinc(</span><span class="si">%(W2)s</span><span class="s2"> * row2) * sinc(</span><span class="si">%(W3)s</span><span class="s2"> * row3)</span>
+<span class="s2">//  #else</span>
+<span class="s2">//      result = complex(cos(temp), sin(-temp))</span>
+<span class="s2">//  #endif</span>
+<span class="s2">//  #ifdef B0_MAT</span>
+<span class="s2">//      / complex(cos(b0_c), sin(-b0_c));</span>
+<span class="s2">//  #else</span>
+<span class="s2">//      ;</span>
+<span class="s2">//  #endif</span>
+
+<span class="s2">      result = complex(cos(temp), sin(-temp));</span>
+<span class="s2">    }</span>
+<span class="s2">    return result;</span>
+<span class="s2">  }</span>
+
+<span class="s2">  __global__ void reshape_cmat(complex* CmatIn, complex* CmatOut)</span>
+<span class="s2">  {</span>
+<span class="s2">    unsigned x = blockIdx.x*blockDim.x + threadIdx.x;</span>
+<span class="s2">    unsigned y = blockIdx.y*blockDim.y + threadIdx.y;</span>
+<span class="s2">    complex temp(0);</span>
+
+<span class="s2">    if (x &lt; </span><span class="si">%(P_RES)s</span><span class="s2">)</span>
+<span class="s2">      temp = CmatIn[y * </span><span class="si">%(P_RES)s</span><span class="s2"> + x];</span>
+
+<span class="s2">    CmatOut[y*</span><span class="si">%(P_RES32)s</span><span class="s2"> + x] = temp;</span>
+<span class="s2">  }</span>
+
+<span class="s2">  __global__ void multiply_E_m(complex* mc, complex* erg, </span><span class="si">%(PRECISION)s</span><span class="s2">* k_mat,</span>
+<span class="s2">                               </span><span class="si">%(PRECISION)s</span><span class="s2">* psi_mat, </span><span class="si">%(PRECISION)s</span><span class="s2">* g_mat,</span>
+<span class="s2">                               </span><span class="si">%(PRECISION)s</span><span class="s2">* b0, </span><span class="si">%(PRECISION)s</span><span class="s2">* ktime,</span>
+<span class="s2">                               int fst_row)</span>
+<span class="s2">  {</span>
+<span class="s2">    // hold the partial sums</span>
+<span class="s2">    __shared__ complex partial_row_sum[</span><span class="si">%(MAX_NUM_THREADS_PER_BLOCK)s</span><span class="s2">];</span>
+<span class="s2">    __syncthreads();</span>
+<span class="s2">    //calculate the product of the current row with the vector x with a stride</span>
+<span class="s2">    complex phi_prefetch[</span><span class="si">%(PHI_PREFETCH_ELEM)s</span><span class="s2">];</span>
+<span class="s2">    //equal to the amount of threads</span>
+<span class="s2">    for(unsigned jump = blockIdx.y + fst_row;</span>
+<span class="s2">        jump &lt; </span><span class="si">%(K_RES)s</span><span class="s2">;</span>
+<span class="s2">        jump += </span><span class="si">%(HOP_E)s</span><span class="s2">)</span>
+<span class="s2">    {</span>
+<span class="s2">      complex sum(0.0, 0.0);</span>
+<span class="s2">      unsigned elem = 0;</span>
+<span class="s2">      for (unsigned index = threadIdx.x;</span>
+<span class="s2">           index &lt; </span><span class="si">%(P_RES)s</span><span class="s2">;</span>
+<span class="s2">           index += blockDim.x)</span>
+<span class="s2">      {</span>
+<span class="s2">        phi_prefetch[elem] = phi_elem(jump, index, k_mat, psi_mat, g_mat, b0,</span>
+<span class="s2">                                      ktime);</span>
+<span class="s2">        elem++;</span>
+<span class="s2">      }</span>
+
+<span class="s2">      for(unsigned coil = 0; coil &lt; </span><span class="si">%(N_COILS)s</span><span class="s2">; coil++)</span>
+<span class="s2">      {</span>
+<span class="s2">        sum = complex(0.0,0.0);</span>
+<span class="s2">        elem = 0;</span>
+<span class="s2">        for (unsigned index = threadIdx.x;</span>
+<span class="s2">             index &lt; </span><span class="si">%(P_RES)s</span><span class="s2">;</span>
+<span class="s2">             index += blockDim.x)</span>
+<span class="s2">        {</span>
+<span class="s2">          sum += phi_prefetch[elem] * mc[index + </span><span class="si">%(P_RES32)s</span><span class="s2">*coil];</span>
+<span class="s2">          elem++;</span>
+<span class="s2">        }</span>
+
+<span class="s2">        partial_row_sum[threadIdx.x] = sum;</span>
+
+<span class="s2">        // reduce the partial sums</span>
+<span class="s2">        for (unsigned counter = blockDim.x &gt;&gt; 1; counter != 0; counter &gt;&gt;= 1)</span>
+<span class="s2">        {</span>
+<span class="s2">          __syncthreads();</span>
+<span class="s2">          if (threadIdx.x &lt; counter)</span>
+<span class="s2">            partial_row_sum[threadIdx.x] +=</span>
+<span class="s2">              partial_row_sum[threadIdx.x + counter];</span>
+<span class="s2">        }</span>
+
+<span class="s2">        // write the result into the output Vector</span>
+<span class="s2">        if (threadIdx.x == 0)</span>
+<span class="s2">          erg[jump + </span><span class="si">%(K_RES)s</span><span class="s2">*coil] = partial_row_sum[0];</span>
+<span class="s2">      }</span>
+<span class="s2">    }</span>
+<span class="s2">  }</span>
+
+<span class="s2">  __global__ void multiply_cmat_m(complex* m, complex* mc, complex* c_mat)</span>
+<span class="s2">  {</span>
+<span class="s2">    unsigned long np_index = threadIdx.x + blockDim.x*blockIdx.x;</span>
+<span class="s2">    if(np_index &gt;= </span><span class="si">%(P_RES)s</span><span class="s2">)</span>
+<span class="s2">      return;</span>
+
+<span class="s2">    for(unsigned i = 0; i &lt; </span><span class="si">%(N_COILS)s</span><span class="s2">; i++)</span>
+<span class="s2">    {</span>
+<span class="s2">      mc[i*</span><span class="si">%(P_RES32)s</span><span class="s2"> + np_index] = c_mat[np_index + i*</span><span class="si">%(P_RES32)s</span><span class="s2">]</span>
+<span class="s2">                                     * m[np_index];</span>
+<span class="s2">    }</span>
+<span class="s2">  }</span>
+
+<span class="s2">  __global__ void multiply_EH_m(complex* m, complex* erg, complex* c_mat,</span>
+<span class="s2">                                </span><span class="si">%(PRECISION)s</span><span class="s2">* k_mat, </span><span class="si">%(PRECISION)s</span><span class="s2">* psi_mat,</span>
+<span class="s2">                                </span><span class="si">%(PRECISION)s</span><span class="s2">* g_mat, </span><span class="si">%(PRECISION)s</span><span class="s2">* b0,</span>
+<span class="s2">                                </span><span class="si">%(PRECISION)s</span><span class="s2">* ktime, int fst_row)</span>
+<span class="s2">  {</span>
+<span class="s2">    __shared__ complex partial_row_sum[</span><span class="si">%(MAX_NUM_THREADS_PER_BLOCK)s</span><span class="s2">];</span>
+<span class="s2">    __shared__ complex cmat_cache[</span><span class="si">%(N_COILS)s</span><span class="s2">];</span>
+<span class="s2">    __syncthreads();</span>
+<span class="s2">    complex phi_cache[512];</span>
+<span class="s2">    // number of elements that are to be cached</span>
+<span class="s2">    unsigned phi_cache_length = </span><span class="si">%(K_RES)s</span><span class="s2"> / blockDim.x ;</span>
+
+<span class="s2">    for(unsigned jump = blockIdx.y + fst_row;</span>
+<span class="s2">        jump &lt; </span><span class="si">%(P_RES)s</span><span class="s2">;</span>
+<span class="s2">        jump += </span><span class="si">%(HOP_EH)s</span><span class="s2">)</span>
+<span class="s2">    {</span>
+<span class="s2">      // current position in the cmat matrix</span>
+<span class="s2">      //unsigned tmp = threadIdx.x*</span><span class="si">%(P_RES32)s</span><span class="s2"> + jump;</span>
+
+<span class="s2">      // prefetch all cmat values needed for this row into the shared memory</span>
+<span class="s2">      if(threadIdx.x &lt; </span><span class="si">%(N_COILS)s</span><span class="s2">)</span>
+<span class="s2">        cmat_cache[threadIdx.x] = c_mat[threadIdx.x*</span><span class="si">%(P_RES32)s</span><span class="s2">+jump];</span>
+<span class="s2">        //cmat_cache[threadIdx.x] = c_mat[tmp];</span>
+
+<span class="s2">      // threads need to be synced at this point to make sure that all</span>
+<span class="s2">      // cmat values are in the shared</span>
+<span class="s2">      // memory before the computation starts</span>
+<span class="s2">      __syncthreads();</span>
+
+<span class="s2">      // prefetch all needed values of phi.</span>
+<span class="s2">      // Since some values are needed more then once, this reduces the</span>
+<span class="s2">      // number of accesses to the memory.</span>
+<span class="s2">      for(unsigned i = 0; i &lt; phi_cache_length; i++)</span>
+<span class="s2">        phi_cache[i] = phi_elem(i*blockDim.x+threadIdx.x, jump, k_mat, psi_mat,</span>
+<span class="s2">                                g_mat, b0, ktime);</span>
+
+<span class="s2">      complex sum(0.0,0.0);</span>
+
+<span class="s2">      // compute the product of the element of E^H and the input vector and sum</span>
+<span class="s2">      // up the results</span>
+<span class="s2">      for (unsigned j = 0; j &lt; phi_cache_length; j++)</span>
+<span class="s2">        for (unsigned k = 0; k &lt; </span><span class="si">%(N_COILS)s</span><span class="s2">; k++)</span>
+<span class="s2">          sum += conj(cmat_cache[k] * phi_cache[j])</span>
+<span class="s2">            * m[k*</span><span class="si">%(K_RES)s</span><span class="s2"> + j*blockDim.x + threadIdx.x];</span>
+
+<span class="s2">      partial_row_sum[threadIdx.x] = sum;</span>
+
+<span class="s2">      // reduce the partial sums</span>
+<span class="s2">      for (unsigned counter = blockDim.x &gt;&gt; 1; counter != 0; counter &gt;&gt;= 1)</span>
+<span class="s2">      {</span>
+<span class="s2">        __syncthreads();</span>
+<span class="s2">        if (threadIdx.x &lt; counter)</span>
+<span class="s2">          partial_row_sum[threadIdx.x] +=</span>
+<span class="s2">            partial_row_sum[threadIdx.x + counter];</span>
+<span class="s2">      }</span>
+
+<span class="s2">      // write the result into the output vector</span>
+<span class="s2">      if(threadIdx.x == 0)</span>
+<span class="s2">        erg[jump] = partial_row_sum[0];</span>
+
+<span class="s2">      __syncthreads();</span>
+<span class="s2">    }</span>
+<span class="s2">  }</span>
+<span class="s2">  &quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="Operator"><a class="viewcode-back" href="../../operators.html#artbox.operators.Operator">[docs]</a><span class="k">class</span> <span class="nc">Operator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create an operator object for the encoding matrix :math:`E`. This object</span>
+<span class="sd">    is used in reconstruction algorithms and provides a forward operator</span>
+<span class="sd">    (`apply`, which implements :math:`Em`) and an adjoint operator (`adjoint`,</span>
+<span class="sd">    which implements :math:`E^Hm`). The operator can only be applied to</span>
+<span class="sd">    vectors.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (ReconData): Loaded dataset.</span>
+<span class="sd">        double (bool): Indicates whether computations should be performed</span>
+<span class="sd">            with double precision or not.</span>
+<span class="sd">        max_threads (int): Number of GPU threads.</span>
+<span class="sd">        norm_div (float): Divide norm of operator by this value (may speed</span>
+<span class="sd">            up convergence).</span>
+<span class="sd">        divide (int): Divide problem into `divide` subproblems (can be</span>
+<span class="sd">            beneficial if the kernels get terminated because the take too</span>
+<span class="sd">            long to run). This applies to both forward and adjoint</span>
+<span class="sd">            operations.</span>
+<span class="sd">        hop (int): Decrease this parameter if your code crashes because</span>
+<span class="sd">            the given problem is too big. This applies to both forward and</span>
+<span class="sd">            adjoint operations.</span>
+<span class="sd">        divide_adjoint (int): Same as `divide`, but only for adjoint</span>
+<span class="sd">            operator.</span>
+<span class="sd">        divide_forward (int): Same as `divide` but only for forward</span>
+<span class="sd">            operator.</span>
+<span class="sd">        hop_adjoint (int): Same as `hop` but only for adjoint operator.</span>
+<span class="sd">        hop_forward (int): Same as `hop` but only for forward operator.</span>
+<span class="sd">        show_kernel_params (int): Print out kernel parameters while</span>
+<span class="sd">            initializing the object.</span>
+<span class="sd">        verbose (int): Be verbose.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_threads</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">norm_div</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">divide</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hop</span><span class="o">=</span><span class="mi">8192</span><span class="p">,</span> <span class="n">divide_adjoint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">divide_forward</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">hop_adjoint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hop_forward</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_kernel_params</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">op_type</span> <span class="o">=</span> <span class="s2">&quot;ENCODINGMAT&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_norm_div</span> <span class="o">=</span> <span class="n">norm_div</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+
+        <span class="k">if</span> <span class="n">double</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">precision_str</span> <span class="o">=</span> <span class="s1">&#39;double&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">complex128</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">precision_real</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">precision_str</span> <span class="o">=</span> <span class="s1">&#39;float&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">complex64</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">precision_real</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+
+        <span class="c1">#: Kernel parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kp</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;max_threads&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_threads</span>
+        <span class="k">if</span> <span class="n">divide_forward</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1">#  self.divide_E = int(divide_forward)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;divide_E&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">divide_forward</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;divide_E&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">divide</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">divide_adjoint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;divide_EH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">divide_adjoint</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;divide_EH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">divide</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">hop_adjoint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;hop_E&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">hop_forward</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;hop_E&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">hop</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">hop_adjoint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;hop_EH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">hop_adjoint</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;hop_EH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">hop</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;block_E&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;hop_E&#39;</span><span class="p">])</span> <span class="o">/</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;divide_E&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;block_EH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;hop_EH&#39;</span><span class="p">])</span> <span class="o">/</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;divide_EH&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;threads_E&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_threads</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;grid_E&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;block_E&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;grid_EH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;block_EH&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;grid_MC&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">p_res</span><span class="p">)</span> <span class="o">/</span>
+                                         <span class="n">max_threads</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;threads_MC&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_threads</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">show_kernel_params</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">print_kernel_params</span><span class="p">()</span>
+
+        <span class="c1"># temporary variable holding the input vector m multplied by each coil</span>
+        <span class="c1"># sensitivity</span>
+
+        <span class="c1">#: Data on the GPU</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;mc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">data</span><span class="o">.</span><span class="n">p_res32</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">nC</span><span class="p">),</span>
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;k&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">k</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;c_mat&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">c_mat</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;psi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">psi</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">recondata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;recondata&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">recondata</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">b0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_b0_provided</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;b0_mat&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;ktime_mat&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_b0_provided</span> <span class="o">=</span> <span class="s1">&#39;#define B0_MAT&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;b0_mat&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">b0</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;ktime_mat&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">ktime</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">G_mat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_g_mat_provided</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;g_mat&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_g_mat_provided</span> <span class="o">=</span> <span class="s1">&#39;#define G_MAT&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;g_mat&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">G_mat</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_multiply_E_m_func</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_multiply_EH_m_func</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_cmat_func</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_multiply_cmat_m_func</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compile_recon_kernels</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Operator._compile_recon_kernels"><a class="viewcode-back" href="../../operators.html#artbox.operators.Operator._compile_recon_kernels">[docs]</a>    <span class="k">def</span> <span class="nf">_compile_recon_kernels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compile reconstruction kernels</span>
+
+<span class="sd">        Replaces placeholders in `KERNEL` with parameters derived from the data</span>
+<span class="sd">        and user input and compiles them. This way it is possible to adapt the</span>
+<span class="sd">        code to the data before compilation. This provides more information for</span>
+<span class="sd">        the compiler and hence potentially leads to faster code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">loc_kernels</span> <span class="o">=</span> <span class="n">KERNELS</span> <span class="o">%</span> <span class="p">{</span>
+            <span class="s1">&#39;P_RES&#39;</span><span class="p">:</span>                     <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">p_res</span><span class="p">),</span>
+            <span class="s1">&#39;K_RES&#39;</span><span class="p">:</span>                     <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">nT</span><span class="p">),</span>
+            <span class="s1">&#39;PRECISION&#39;</span><span class="p">:</span>                 <span class="bp">self</span><span class="o">.</span><span class="n">precision_str</span><span class="p">,</span>
+            <span class="s1">&#39;W1&#39;</span><span class="p">:</span>                        <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span>  <span class="c1"># check /2</span>
+            <span class="s1">&#39;W2&#39;</span><span class="p">:</span>                        <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span>
+            <span class="s1">&#39;W3&#39;</span><span class="p">:</span>                        <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span>
+            <span class="s1">&#39;MAX_NUM_THREADS_PER_BLOCK&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;max_threads&#39;</span><span class="p">]),</span>
+            <span class="s1">&#39;PHI_PREFETCH_ELEM&#39;</span><span class="p">:</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">next_power_of_2</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">p_res</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;threads_E&#39;</span><span class="p">])),</span>
+            <span class="s1">&#39;HOP_E&#39;</span><span class="p">:</span>                     <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;hop_E&#39;</span><span class="p">]),</span>
+            <span class="s1">&#39;N_COILS&#39;</span><span class="p">:</span>                   <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">nC</span><span class="p">),</span>
+            <span class="s1">&#39;P_RES32&#39;</span><span class="p">:</span>                   <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">p_res32</span><span class="p">),</span>
+            <span class="s1">&#39;GRID_E&#39;</span><span class="p">:</span>                    <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;grid_E&#39;</span><span class="p">]),</span>
+            <span class="s1">&#39;THREADS_E&#39;</span><span class="p">:</span>                 <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;threads_E&#39;</span><span class="p">]),</span>
+            <span class="s1">&#39;BLOCK_E&#39;</span><span class="p">:</span>                   <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;block_E&#39;</span><span class="p">]),</span>
+            <span class="s1">&#39;GRID_MC&#39;</span><span class="p">:</span>                   <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;grid_MC&#39;</span><span class="p">]),</span>
+            <span class="s1">&#39;THREADS_MC&#39;</span><span class="p">:</span>                <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;threads_MC&#39;</span><span class="p">]),</span>
+            <span class="s1">&#39;HOP_EH&#39;</span><span class="p">:</span>                    <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;hop_EH&#39;</span><span class="p">]),</span>
+            <span class="s1">&#39;NUM_SEM&#39;</span><span class="p">:</span>                   <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">nF</span><span class="p">),</span>
+            <span class="s1">&#39;B0_MAT_PROVIDED&#39;</span><span class="p">:</span>           <span class="bp">self</span><span class="o">.</span><span class="n">_b0_provided</span><span class="p">,</span>
+            <span class="s1">&#39;G_MAT_PROVIDED&#39;</span><span class="p">:</span>            <span class="bp">self</span><span class="o">.</span><span class="n">_g_mat_provided</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Compile the kernels</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="n">compiler</span><span class="o">.</span><span class="n">SourceModule</span><span class="p">(</span><span class="n">loc_kernels</span><span class="p">)</span>
+
+        <span class="c1"># Assign the references to the kernels to class members</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_multiply_E_m_func</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;multiply_E_m&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_multiply_EH_m_func</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;multiply_EH_m&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reshape_cmat_func</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;reshape_cmat&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_multiply_cmat_m_func</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;multiply_cmat_m&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Operator.print_kernel_params"><a class="viewcode-back" href="../../operators.html#artbox.operators.Operator.print_kernel_params">[docs]</a>    <span class="k">def</span> <span class="nf">print_kernel_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Print kernel parameters to the terminal</span>
+
+<span class="sd">        This may be helpful if stdout is piped to a file for documentation</span>
+<span class="sd">        or debugging purposes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Kernel parameters:&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  block_E:    &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;block_E&#39;</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  block_EH:   &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;block_EH&#39;</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  threads_E:  &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;threads_E&#39;</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  grid_E:     &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;grid_E&#39;</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  grid_EH:    &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;grid_EH&#39;</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  grid_MC:    &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;grid_MC&#39;</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  threads_MC: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;threads_MC&#39;</span><span class="p">]))</span></div>
+
+<div class="viewcode-block" id="Operator.apply"><a class="viewcode-back" href="../../operators.html#artbox.operators.Operator.apply">[docs]</a>    <span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Multiply the encoding matrix :math:`E` with the input vector</span>
+<span class="sd">        :math:`m`. `result` will be modified in-place.</span>
+
+<span class="sd">        :math:`result = Em`</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            m (gpuarray): input vector :math:`m`</span>
+<span class="sd">            result (gpuarray): result of :math:`Em`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1">#: multiply m with each coil sensitivity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_multiply_cmat_m_func</span><span class="p">(</span><span class="n">m</span><span class="p">,</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;mc&#39;</span><span class="p">],</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;c_mat&#39;</span><span class="p">],</span>
+                                   <span class="n">block</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;max_threads&#39;</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                                   <span class="n">grid</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;grid_MC&#39;</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="c1">#: solve subproblems</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;divide_E&#39;</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_multiply_E_m_func</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;mc&#39;</span><span class="p">],</span>
+                                    <span class="n">result</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;k&#39;</span><span class="p">],</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;psi&#39;</span><span class="p">],</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;g_mat&#39;</span><span class="p">],</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;b0_mat&#39;</span><span class="p">],</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;ktime_mat&#39;</span><span class="p">],</span>
+                                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;block_E&#39;</span><span class="p">]),</span>
+                                    <span class="n">block</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;max_threads&#39;</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                                    <span class="n">grid</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;grid_E&#39;</span><span class="p">]))</span></div>
+
+<div class="viewcode-block" id="Operator.adjoint"><a class="viewcode-back" href="../../operators.html#artbox.operators.Operator.adjoint">[docs]</a>    <span class="k">def</span> <span class="nf">adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Multiply the adjoint of the encoding matrix (:math:`E^H`) with the</span>
+<span class="sd">        input vector :math:`m`. `result` will be modified in-place.</span>
+
+<span class="sd">        :math:`result = E^Hm`</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            m (gpuarray): input vector :math:`m`</span>
+<span class="sd">            result (gpuarray): result of :math:`E^Hm`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#: solve the subproblems</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;divide_EH&#39;</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_multiply_EH_m_func</span><span class="p">(</span><span class="n">m</span><span class="p">,</span>
+                                     <span class="n">result</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;c_mat&#39;</span><span class="p">],</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;k&#39;</span><span class="p">],</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;psi&#39;</span><span class="p">],</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;g_mat&#39;</span><span class="p">],</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;b0_mat&#39;</span><span class="p">],</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;ktime_mat&#39;</span><span class="p">],</span>
+                                     <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;block_EH&#39;</span><span class="p">]),</span>
+                                     <span class="n">block</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;max_threads&#39;</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                                     <span class="n">grid</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kp</span><span class="p">[</span><span class="s1">&#39;grid_EH&#39;</span><span class="p">]))</span></div>
+            <span class="c1"># cuda.Context.synchronize()</span>
+
+<div class="viewcode-block" id="Operator.norm_est"><a class="viewcode-back" href="../../operators.html#artbox.operators.Operator.norm_est">[docs]</a>    <span class="k">def</span> <span class="nf">norm_est</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">iters</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Estimates norm of the operator with a power iteration.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            u (gpuarray): input array</span>
+<span class="sd">            iters (int): number of iterations</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Estimating Norm...&quot;</span><span class="p">)</span>
+
+        <span class="n">u_temp</span> <span class="o">=</span> <span class="n">gpuarray_copy</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">nC</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">nT</span><span class="p">],</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">iters</span><span class="p">):</span>
+            <span class="n">dot_tmp</span> <span class="o">=</span> <span class="n">dotc_gpu</span><span class="p">(</span><span class="n">u_temp</span><span class="p">)</span>
+            <span class="n">u_temp</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dot_tmp</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">u_temp</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">adjoint</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">u_temp</span><span class="p">)</span>
+            <span class="n">normsqr</span> <span class="o">=</span> <span class="n">dotc_gpu</span><span class="p">(</span><span class="n">u_temp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">normsqr</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">_norm_div</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Operator.test_adjoint"><a class="viewcode-back" href="../../operators.html#artbox.operators.Operator.test_adjoint">[docs]</a>    <span class="k">def</span> <span class="nf">test_adjoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iters</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Test the adjoint operator.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            iters (int): number of iterations</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">src_shape</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">nX1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">nX2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">dest_shape</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">nT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">nC</span><span class="p">)</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">src_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+        <span class="n">ut</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">src_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision_real</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+        <span class="n">Ku</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dest_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dest_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+        <span class="n">vt</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dest_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision_real</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+        <span class="n">Kadv</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">src_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+
+        <span class="n">generator</span> <span class="o">=</span> <span class="n">curandom</span><span class="o">.</span><span class="n">XORWOWRandomNumberGenerator</span><span class="p">()</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iters</span><span class="p">):</span>
+                <span class="c1"># randomness</span>
+                <span class="n">generator</span><span class="o">.</span><span class="n">fill_uniform</span><span class="p">(</span><span class="n">ut</span><span class="p">)</span>
+                <span class="n">generator</span><span class="o">.</span><span class="n">fill_uniform</span><span class="p">(</span><span class="n">vt</span><span class="p">)</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">gpuarray_copy</span><span class="p">(</span><span class="n">vt</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">))</span>
+                <span class="n">u</span> <span class="o">=</span> <span class="n">gpuarray_copy</span><span class="p">(</span><span class="n">ut</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">))</span>
+
+                <span class="c1"># apply operators</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">Ku</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">adjoint</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Kadv</span><span class="p">)</span>
+
+                <span class="n">scp1</span> <span class="o">=</span> <span class="n">dotc_gpu</span><span class="p">(</span><span class="n">Ku</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+                <span class="n">scp2</span> <span class="o">=</span> <span class="n">dotc_gpu</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">Kadv</span><span class="p">)</span>
+                <span class="n">n_Ku</span> <span class="o">=</span> <span class="n">dotc_gpu</span><span class="p">(</span><span class="n">Ku</span><span class="p">)</span>
+                <span class="n">n_Kadv</span> <span class="o">=</span> <span class="n">dotc_gpu</span><span class="p">(</span><span class="n">Kadv</span><span class="p">)</span>
+                <span class="n">n_u</span> <span class="o">=</span> <span class="n">dotc_gpu</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+                <span class="n">n_v</span> <span class="o">=</span> <span class="n">dotc_gpu</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scp1</span><span class="o">-</span><span class="n">scp2</span><span class="p">))</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Test &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;: &lt;Ku,v&gt;=&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">scp1</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, &lt;u,Kadv&gt;=&quot;</span> <span class="o">+</span>
+                  <span class="nb">str</span><span class="p">(</span><span class="n">scp2</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, Error=&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scp1</span><span class="o">-</span><span class="n">scp2</span><span class="p">))</span> <span class="o">+</span>
+                  <span class="s2">&quot;, Relative Error=&quot;</span> <span class="o">+</span>
+                  <span class="nb">str</span><span class="p">((</span><span class="n">scp1</span><span class="o">-</span><span class="n">scp2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">n_Ku</span><span class="o">*</span><span class="n">n_v</span> <span class="o">+</span> <span class="n">n_Kadv</span><span class="o">*</span><span class="n">n_u</span><span class="p">)))</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">errors</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mean Error: &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">errors</span><span class="p">)))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Standarddeviation: &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">errors</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">i</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">ARTBOX</a></h1>
+
+
+
+<p class="blurb">Accelerated Reconstruction Toolbox for MRI</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=stefan-k&repo=ARTBOX&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../reconfile.html">ReconData</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tgv.html">Total Generalized Variation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tgv_kernels.html">TGV Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cg.html">Conjugate Gradients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools.html">Tools</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Stefan Kroboth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+    <a href="https://github.com/stefan-k/ARTBOX" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

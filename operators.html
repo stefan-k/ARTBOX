@@ -1,0 +1,273 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Operators &#8212; ARTBOX 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Total Generalized Variation" href="tgv.html" />
+    <link rel="prev" title="ReconData" href="reconfile.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-artbox.operators">
+<span id="operators"></span><h1>Operators<a class="headerlink" href="#module-artbox.operators" title="Permalink to this headline">¶</a></h1>
+<p>Encoding matrix Operator.</p>
+<p><cite>Operator</cite> object which provides a forward operator (<cite>apply</cite>) and an adjoint
+operator (<cite>adjoint</cite>) which implement operations with the encoding matrix.</p>
+<p>Author: Stefan Kroboth &lt;<a class="reference external" href="mailto:stefan&#46;kroboth&#37;&#52;&#48;gmail&#46;com">stefan<span>&#46;</span>kroboth<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+<dl class="class">
+<dt id="artbox.operators.Operator">
+<em class="property">class </em><code class="descclassname">artbox.operators.</code><code class="descname">Operator</code><span class="sig-paren">(</span><em>data</em>, <em>double=False</em>, <em>max_threads=256</em>, <em>norm_div=1</em>, <em>divide=1</em>, <em>hop=8192</em>, <em>divide_adjoint=None</em>, <em>divide_forward=None</em>, <em>hop_adjoint=None</em>, <em>hop_forward=None</em>, <em>show_kernel_params=False</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/operators.html#Operator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.operators.Operator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an operator object for the encoding matrix <span class="math">\(E\)</span>. This object
+is used in reconstruction algorithms and provides a forward operator
+(<cite>apply</cite>, which implements <span class="math">\(Em\)</span>) and an adjoint operator (<cite>adjoint</cite>,
+which implements <span class="math">\(E^Hm\)</span>). The operator can only be applied to
+vectors.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>data</strong> (<a class="reference internal" href="reconfile.html#artbox.reconfile.ReconData" title="artbox.reconfile.ReconData"><em>ReconData</em></a>) – Loaded dataset.</li>
+<li><strong>double</strong> (<em>bool</em>) – Indicates whether computations should be performed
+with double precision or not.</li>
+<li><strong>max_threads</strong> (<em>int</em>) – Number of GPU threads.</li>
+<li><strong>norm_div</strong> (<em>float</em>) – Divide norm of operator by this value (may speed
+up convergence).</li>
+<li><strong>divide</strong> (<em>int</em>) – Divide problem into <cite>divide</cite> subproblems (can be
+beneficial if the kernels get terminated because the take too
+long to run). This applies to both forward and adjoint
+operations.</li>
+<li><strong>hop</strong> (<em>int</em>) – Decrease this parameter if your code crashes because
+the given problem is too big. This applies to both forward and
+adjoint operations.</li>
+<li><strong>divide_adjoint</strong> (<em>int</em>) – Same as <cite>divide</cite>, but only for adjoint
+operator.</li>
+<li><strong>divide_forward</strong> (<em>int</em>) – Same as <cite>divide</cite> but only for forward
+operator.</li>
+<li><strong>hop_adjoint</strong> (<em>int</em>) – Same as <cite>hop</cite> but only for adjoint operator.</li>
+<li><strong>hop_forward</strong> (<em>int</em>) – Same as <cite>hop</cite> but only for forward operator.</li>
+<li><strong>show_kernel_params</strong> (<em>int</em>) – Print out kernel parameters while
+initializing the object.</li>
+<li><strong>verbose</strong> (<em>int</em>) – Be verbose.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="artbox.operators.Operator._compile_recon_kernels">
+<code class="descname">_compile_recon_kernels</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/operators.html#Operator._compile_recon_kernels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.operators.Operator._compile_recon_kernels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compile reconstruction kernels</p>
+<p>Replaces placeholders in <cite>KERNEL</cite> with parameters derived from the data
+and user input and compiles them. This way it is possible to adapt the
+code to the data before compilation. This provides more information for
+the compiler and hence potentially leads to faster code.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.operators.Operator.adjoint">
+<code class="descname">adjoint</code><span class="sig-paren">(</span><em>m</em>, <em>result</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/operators.html#Operator.adjoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.operators.Operator.adjoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiply the adjoint of the encoding matrix (<span class="math">\(E^H\)</span>) with the
+input vector <span class="math">\(m\)</span>. <cite>result</cite> will be modified in-place.</p>
+<p><span class="math">\(result = E^Hm\)</span></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>m</strong> (<em>gpuarray</em>) – input vector <span class="math">\(m\)</span></li>
+<li><strong>result</strong> (<em>gpuarray</em>) – result of <span class="math">\(E^Hm\)</span></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.operators.Operator.apply">
+<code class="descname">apply</code><span class="sig-paren">(</span><em>m</em>, <em>result</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/operators.html#Operator.apply"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.operators.Operator.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiply the encoding matrix <span class="math">\(E\)</span> with the input vector
+<span class="math">\(m\)</span>. <cite>result</cite> will be modified in-place.</p>
+<p><span class="math">\(result = Em\)</span></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>m</strong> (<em>gpuarray</em>) – input vector <span class="math">\(m\)</span></li>
+<li><strong>result</strong> (<em>gpuarray</em>) – result of <span class="math">\(Em\)</span></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.operators.Operator.dgpu">
+<code class="descname">dgpu</code><em class="property"> = None</em><a class="headerlink" href="#artbox.operators.Operator.dgpu" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data on the GPU</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.operators.Operator.kp">
+<code class="descname">kp</code><em class="property"> = None</em><a class="headerlink" href="#artbox.operators.Operator.kp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kernel parameters</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.operators.Operator.norm_est">
+<code class="descname">norm_est</code><span class="sig-paren">(</span><em>u</em>, <em>iters=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/operators.html#Operator.norm_est"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.operators.Operator.norm_est" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimates norm of the operator with a power iteration.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>u</strong> (<em>gpuarray</em>) – input array</li>
+<li><strong>iters</strong> (<em>int</em>) – number of iterations</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.operators.Operator.print_kernel_params">
+<code class="descname">print_kernel_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/operators.html#Operator.print_kernel_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.operators.Operator.print_kernel_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print kernel parameters to the terminal</p>
+<p>This may be helpful if stdout is piped to a file for documentation
+or debugging purposes.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.operators.Operator.test_adjoint">
+<code class="descname">test_adjoint</code><span class="sig-paren">(</span><em>iters=5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/operators.html#Operator.test_adjoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.operators.Operator.test_adjoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test the adjoint operator.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>iters</strong> (<em>int</em>) – number of iterations</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ARTBOX</a></h1>
+
+
+
+<p class="blurb">Accelerated Reconstruction Toolbox for MRI</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=stefan-k&repo=ARTBOX&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="reconfile.html">ReconData</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tgv.html">Total Generalized Variation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tgv_kernels.html">TGV Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cg.html">Conjugate Gradients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">Tools</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="reconfile.html" title="previous chapter">ReconData</a></li>
+      <li>Next: <a href="tgv.html" title="next chapter">Total Generalized Variation</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Stefan Kroboth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/operators.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/stefan-k/ARTBOX" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

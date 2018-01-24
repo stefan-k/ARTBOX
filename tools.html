@@ -1,0 +1,828 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Tools &#8212; ARTBOX 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Conjugate Gradients" href="cg.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-artbox.tools">
+<span id="tools"></span><h1>Tools<a class="headerlink" href="#module-artbox.tools" title="Permalink to this headline">¶</a></h1>
+<p>Convenient helper functions</p>
+<p>Author: Stefan Kroboth &lt;<a class="reference external" href="mailto:stefan&#46;kroboth&#37;&#52;&#48;gmail&#46;com">stefan<span>&#46;</span>kroboth<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+<dl class="function">
+<dt id="artbox.tools.add_scaled_vector">
+<code class="descclassname">artbox.tools.</code><code class="descname">add_scaled_vector</code><span class="sig-paren">(</span><em>out</em>, <em>inp1</em>, <em>scal</em>, <em>inp2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#add_scaled_vector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.add_scaled_vector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform the following (single precision) calculation on the GPU:</p>
+<p><code class="docutils literal"><span class="pre">out</span> <span class="pre">=</span> <span class="pre">inp1</span> <span class="pre">+</span> <span class="pre">scal</span> <span class="pre">*</span> <span class="pre">inp2</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inp1</strong> (<em>gpuarray</em>) – First input array.</li>
+<li><strong>inp2</strong> (<em>gpuarray</em>) – Second input array.</li>
+<li><strong>scal</strong> (<em>float</em>) – Scaling parameter.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Output array.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">gpuarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.add_scaled_vector_double">
+<code class="descclassname">artbox.tools.</code><code class="descname">add_scaled_vector_double</code><span class="sig-paren">(</span><em>out</em>, <em>inp1</em>, <em>scal</em>, <em>inp2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#add_scaled_vector_double"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.add_scaled_vector_double" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform the following (double precision) calculation on the GPU:</p>
+<p><code class="docutils literal"><span class="pre">out</span> <span class="pre">=</span> <span class="pre">inp1</span> <span class="pre">+</span> <span class="pre">scal</span> <span class="pre">*</span> <span class="pre">inp2</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inp1</strong> (<em>gpuarray</em>) – First input array.</li>
+<li><strong>inp2</strong> (<em>gpuarray</em>) – Second input array.</li>
+<li><strong>scal</strong> (<em>float</em>) – Scaling parameter.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Output array.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">gpuarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.add_scaled_vector_vector">
+<code class="descclassname">artbox.tools.</code><code class="descname">add_scaled_vector_vector</code><span class="sig-paren">(</span><em>out</em>, <em>inp1</em>, <em>scal</em>, <em>inp2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#add_scaled_vector_vector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.add_scaled_vector_vector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform the following (single precision) calculation on the GPU:</p>
+<p><code class="docutils literal"><span class="pre">out</span> <span class="pre">=</span> <span class="pre">inp1</span> <span class="pre">+</span> <span class="pre">scal</span> <span class="pre">*</span> <span class="pre">inp2</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inp1</strong> (<em>gpuarray</em>) – First input array.</li>
+<li><strong>inp2</strong> (<em>gpuarray</em>) – Second input array.</li>
+<li><strong>scal</strong> (<em>gpuarray</em>) – Scaling array.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Output array.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">gpuarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.add_scaled_vector_vector_double">
+<code class="descclassname">artbox.tools.</code><code class="descname">add_scaled_vector_vector_double</code><span class="sig-paren">(</span><em>out</em>, <em>inp1</em>, <em>scal</em>, <em>inp2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#add_scaled_vector_vector_double"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.add_scaled_vector_vector_double" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform the following (double precision) calculation on the GPU:</p>
+<p><code class="docutils literal"><span class="pre">out</span> <span class="pre">=</span> <span class="pre">inp1</span> <span class="pre">+</span> <span class="pre">scal</span> <span class="pre">*</span> <span class="pre">inp2</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inp1</strong> (<em>gpuarray</em>) – First input array.</li>
+<li><strong>inp2</strong> (<em>gpuarray</em>) – Second input array.</li>
+<li><strong>scal</strong> (<em>gpuarray</em>) – Scaling array.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Output array.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">gpuarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.arr_pad">
+<code class="descclassname">artbox.tools.</code><code class="descname">arr_pad</code><span class="sig-paren">(</span><em>x</em>, <em>dims</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#arr_pad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.arr_pad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Basically zeropadding an array to <code class="docutils literal"><span class="pre">dims</span></code> dimensions.
+Implemented as follows:
+Write a smaller array into a bigger one. The bigger array will be created
+according to <code class="docutils literal"><span class="pre">dims</span></code>. The place of the smaller matrix will be in the upper
+left corner of the bigger array.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<em>gpuarray</em>) – Input array.</li>
+<li><strong>dims</strong> (<em>tuple</em>) – Dimensions of the bigger array.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>Output array of size <cite>dims</cite> with <cite>x</cite> in the upper left</dt>
+<dd><p class="first last">corner.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">gpuarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="data">
+<dt id="artbox.tools.block">
+<code class="descclassname">artbox.tools.</code><code class="descname">block</code><em class="property"> = (16, 16, 1)</em><a class="headerlink" href="#artbox.tools.block" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic block definition</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="artbox.tools.block_size_x">
+<code class="descclassname">artbox.tools.</code><code class="descname">block_size_x</code><em class="property"> = 16</em><a class="headerlink" href="#artbox.tools.block_size_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic blocksize in x</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="artbox.tools.block_size_y">
+<code class="descclassname">artbox.tools.</code><code class="descname">block_size_y</code><em class="property"> = 16</em><a class="headerlink" href="#artbox.tools.block_size_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic blocksize in y</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.conj_sens_mul">
+<code class="descclassname">artbox.tools.</code><code class="descname">conj_sens_mul</code><span class="sig-paren">(</span><em>u</em>, <em>v</em>, <em>sens</em>, <em>coil</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#conj_sens_mul"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.conj_sens_mul" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiply an array <code class="docutils literal"><span class="pre">v</span></code> with the coil sensitivity <code class="docutils literal"><span class="pre">sens</span></code> and add it
+to <code class="docutils literal"><span class="pre">u</span></code></p>
+<p><code class="docutils literal"><span class="pre">u</span> <span class="pre">=</span> <span class="pre">u</span> <span class="pre">+</span> <span class="pre">v</span> <span class="pre">*</span> <span class="pre">conj(sens[coil])</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>u</strong> (<em>gpuarray</em>) – Array.</li>
+<li><strong>v</strong> (<em>gpuarray</em>) – Array.</li>
+<li><strong>sens</strong> (<em>gpuarray</em>) – RF sensitivity maps for all RF coils.</li>
+<li><strong>coil</strong> (<em>int</em>) – Coil index.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.create_dir">
+<code class="descclassname">artbox.tools.</code><code class="descname">create_dir</code><span class="sig-paren">(</span><em>dir_name</em>, <em>skip_question=True</em>, <em>default='no'</em>, <em>question='Directory already exists and files may beoverwritten. Proceed?'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#create_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.create_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience function for creating a directory.</p>
+<p>If skip_question is <cite>False</cite>, the user will be ask to overwrite the
+directory if it already exists.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dir_name</strong> (<em>str</em>) – Name of directory.</li>
+<li><strong>skip_question</strong> (<em>bool</em>) – If <code class="docutils literal"><span class="pre">True</span></code>, directory will either be overwritten
+or not overwritten without asking the user, depending on the value
+of <cite>default</cite>.</li>
+<li><strong>default</strong> (<em>str</em>) – Default answer if directory already exists (“yes” or
+“no”).</li>
+<li><strong>question</strong> (<em>str</em>) – Question prompted to the user if directory already
+exists.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.display">
+<code class="descclassname">artbox.tools.</code><code class="descname">display</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.display" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display a string without a trailing newline like the print command does.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>string</strong> (<em>str</em>) – String to print.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.dotc">
+<code class="descclassname">artbox.tools.</code><code class="descname">dotc</code><span class="sig-paren">(</span><em>x</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#dotc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.dotc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate complex dot product
+If y is not provided, &lt;x, x&gt; is calculated instead.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<em>ndarray</em>) – Vector.</li>
+<li><strong>y</strong> (<em>ndarray</em>) – Vector.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Complex dot product.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.dotc_gpu">
+<code class="descclassname">artbox.tools.</code><code class="descname">dotc_gpu</code><span class="sig-paren">(</span><em>x</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#dotc_gpu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.dotc_gpu" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate complex dot product on GPU.
+If y is not provided, &lt;x, x&gt; is calculated instead.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<em>ndarray</em>) – Vector.</li>
+<li><strong>y</strong> (<em>ndarray</em>) – Vector.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Absolute of complex dot product.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.dual_energy">
+<code class="descclassname">artbox.tools.</code><code class="descname">dual_energy</code><span class="sig-paren">(</span><em>u</em>, <em>alpha0</em>, <em>show_text</em>, <em>on_gpu=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#dual_energy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.dual_energy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate and print dual energy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>u</strong> (<em>gpuarray</em>) – Array.</li>
+<li><strong>alpha0</strong> (<em>float</em>) – Regularization parameter.</li>
+<li><strong>show_text</strong> (<em>bool</em>) – If <cite>True</cite>, prints dual energy.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Dual energy.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.dxm">
+<code class="descclassname">artbox.tools.</code><code class="descname">dxm</code><span class="sig-paren">(</span><em>u</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#dxm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.dxm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forward finite differences in x direction.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>u</strong> (<em>ndarray</em>) – 2D input array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Finite difference.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.dxp">
+<code class="descclassname">artbox.tools.</code><code class="descname">dxp</code><span class="sig-paren">(</span><em>u</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#dxp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.dxp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Backward finite differences in x direction.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>u</strong> (<em>ndarray</em>) – 2D input array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Finite difference.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.dym">
+<code class="descclassname">artbox.tools.</code><code class="descname">dym</code><span class="sig-paren">(</span><em>u</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#dym"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.dym" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forward finite differences in y direction.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>u</strong> (<em>ndarray</em>) – 2D input array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Finite difference.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.dyp">
+<code class="descclassname">artbox.tools.</code><code class="descname">dyp</code><span class="sig-paren">(</span><em>u</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#dyp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.dyp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Backward finite differences in y direction.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>u</strong> (<em>ndarray</em>) – 2D input array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Finite difference.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.enlarge_next_power_of_2">
+<code class="descclassname">artbox.tools.</code><code class="descname">enlarge_next_power_of_2</code><span class="sig-paren">(</span><em>shape</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#enlarge_next_power_of_2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.enlarge_next_power_of_2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the next larger shape which is a power of two.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>shape</strong> (<em>array</em><em> or </em><em>tuple</em>) – Array of dimensions.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Dimensions with are a power of two.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.fill_v">
+<code class="descclassname">artbox.tools.</code><code class="descname">fill_v</code><span class="sig-paren">(</span><em>v</em>, <em>vin</em>, <em>coil</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#fill_v"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.fill_v" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write one slice in to a 3D stack of images.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>v</strong> (<em>gpuarray</em>) – 3D array.</li>
+<li><strong>vin</strong> (<em>gpuarray</em>) – 2D input array.</li>
+<li><strong>coil</strong> (<em>int</em>) – RF coil index.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.format_tuple">
+<code class="descclassname">artbox.tools.</code><code class="descname">format_tuple</code><span class="sig-paren">(</span><em>tup</em>, <em>join_char='.'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#format_tuple"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.format_tuple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Formats a tuple of Version numbers for printing.</p>
+<p>Example:
+(4, 2, 0) turns into 4.2.0</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tup</strong> (<em>tuple</em>) – Version as tuple.</li>
+<li><strong>join_char</strong> (<em>char</em>) – Character by which numbers are joined (default: “.”)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Joined version number.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">str</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.get_grid">
+<code class="descclassname">artbox.tools.</code><code class="descname">get_grid</code><span class="sig-paren">(</span><em>u</em>, <em>offset=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#get_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.get_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes grid size based on block_size_x, block_size_y and the array
+size.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>u</strong> (<em>ndarray</em>) – Input array for which gridsize should be calculated.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">CUDA grid.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">tuple</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.gpu_info">
+<code class="descclassname">artbox.tools.</code><code class="descname">gpu_info</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#gpu_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.gpu_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show GPU information</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.gpuarray_copy">
+<code class="descclassname">artbox.tools.</code><code class="descname">gpuarray_copy</code><span class="sig-paren">(</span><em>u</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#gpuarray_copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.gpuarray_copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copes a gpuarray object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>u</strong> (<em>gpuarray</em>) – Input array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Deep copy of input array.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">gpuarra</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.imwrite">
+<code class="descclassname">artbox.tools.</code><code class="descname">imwrite</code><span class="sig-paren">(</span><em>fname</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#imwrite"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.imwrite" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write image to file.</p>
+<p>First scales the image to the interval [0 255].</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fname</strong> (<em>str</em>) – Filename.</li>
+<li><strong>data</strong> (<em>ndarray</em>) – 2D image array.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.next_power_of_2">
+<code class="descclassname">artbox.tools.</code><code class="descname">next_power_of_2</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#next_power_of_2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.next_power_of_2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the next larger number which is a power of two.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>float</em>) – Input number.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Next larger number which is a power of two.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">float</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.query_yes_no">
+<code class="descclassname">artbox.tools.</code><code class="descname">query_yes_no</code><span class="sig-paren">(</span><em>question</em>, <em>default='yes'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#query_yes_no"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.query_yes_no" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ask a yes/no question via raw_input() and return their answer.</p>
+<p>Snippet adapted from:
+<a class="reference external" href="http://code.activestate.com/recipes/577058-query-yesno/">http://code.activestate.com/recipes/577058-query-yesno/</a></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>question</strong> (<em>str</em>) – Question presented to the user.</li>
+<li><strong>default</strong> (<em>str</em>) – Default answer; ‘yes’, ‘no’ or <cite>None</cite>. The latter
+requires the user to provide an answer.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Either “yes” or “no”, depending on the user input.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">str</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.save_image">
+<code class="descclassname">artbox.tools.</code><code class="descname">save_image</code><span class="sig-paren">(</span><em>img</em>, <em>out_dir</em>, <em>name</em>, <em>image_format='png'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#save_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.save_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save image to file.</p>
+<p>More convenient function than <cite>imwrite</cite> because it is easier to provide the
+directory and the image format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>img</strong> (<em>ndarray</em>) – 2D image array.</li>
+<li><strong>out_dir</strong> (<em>str</em>) – Output directory.</li>
+<li><strong>name</strong> (<em>str</em>) – Filename.</li>
+<li><strong>image_format</strong> (<em>str</em>) – Image extension/format (default: ‘png’)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.save_matlab">
+<code class="descclassname">artbox.tools.</code><code class="descname">save_matlab</code><span class="sig-paren">(</span><em>img</em>, <em>out_dir</em>, <em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#save_matlab"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.save_matlab" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save a matrix as .mat file</p>
+<p>The file will be saved in <cite>&lt;out_dir&gt;/mat/img_&lt;name&gt;.mat</cite> for some reason.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>img</strong> (<em>ndarray</em>) – 2D image array.</li>
+<li><strong>out_dir</strong> (<em>str</em>) – Output directory.</li>
+<li><strong>name</strong> (<em>str</em>) – Filename.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.sens_mul">
+<code class="descclassname">artbox.tools.</code><code class="descname">sens_mul</code><span class="sig-paren">(</span><em>out</em>, <em>u</em>, <em>sens</em>, <em>coil</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#sens_mul"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.sens_mul" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiply an array with the coil sensitivity</p>
+<p><code class="docutils literal"><span class="pre">out</span> <span class="pre">=</span> <span class="pre">u</span> <span class="pre">*</span> <span class="pre">sens[coil]</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>out</strong> (<em>gpuarray</em>) – Output array.</li>
+<li><strong>u</strong> (<em>gpuarray</em>) – Input array.</li>
+<li><strong>sens</strong> (<em>gpuarray</em>) – RF sensitivity maps for all RF coils.</li>
+<li><strong>coil</strong> (<em>int</em>) – Coil index.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.slice_coil">
+<code class="descclassname">artbox.tools.</code><code class="descname">slice_coil</code><span class="sig-paren">(</span><em>inp</em>, <em>outp=None</em>, <em>coil=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#slice_coil"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.slice_coil" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a slice of a 3D-Array (image stack or coil sensitivity) since
+slicing is not implemented in PyCUDA.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inp</strong> (<em>gpuarray</em>) – Input array.</li>
+<li><strong>outp</strong> (<em>gpuarray</em>) – Output slice (optional, if not provided, it will be
+created).</li>
+<li><strong>coil</strong> (<em>int</em>) – Coil index.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Output array.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">gpuarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.sub_scaled_vector">
+<code class="descclassname">artbox.tools.</code><code class="descname">sub_scaled_vector</code><span class="sig-paren">(</span><em>out</em>, <em>inp1</em>, <em>scal</em>, <em>inp2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#sub_scaled_vector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.sub_scaled_vector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform the following (single precision) calculation on the GPU:</p>
+<p><code class="docutils literal"><span class="pre">out</span> <span class="pre">=</span> <span class="pre">inp1</span> <span class="pre">-</span> <span class="pre">scal</span> <span class="pre">*</span> <span class="pre">inp2</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inp1</strong> (<em>gpuarray</em>) – First input array.</li>
+<li><strong>inp2</strong> (<em>gpuarray</em>) – Second input array.</li>
+<li><strong>scal</strong> (<em>float</em>) – Scaling parameter.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Output array.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">gpuarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.sub_scaled_vector_double">
+<code class="descclassname">artbox.tools.</code><code class="descname">sub_scaled_vector_double</code><span class="sig-paren">(</span><em>out</em>, <em>inp1</em>, <em>scal</em>, <em>inp2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#sub_scaled_vector_double"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.sub_scaled_vector_double" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform the following (double precision) calculation on the GPU:</p>
+<p><code class="docutils literal"><span class="pre">out</span> <span class="pre">=</span> <span class="pre">inp1</span> <span class="pre">-</span> <span class="pre">scal</span> <span class="pre">*</span> <span class="pre">inp2</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inp1</strong> (<em>gpuarray</em>) – First input array.</li>
+<li><strong>inp2</strong> (<em>gpuarray</em>) – Second input array.</li>
+<li><strong>scal</strong> (<em>float</em>) – Scaling parameter.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Output array.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">gpuarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tools.x_sn_mul">
+<code class="descclassname">artbox.tools.</code><code class="descname">x_sn_mul</code><span class="sig-paren">(</span><em>x</em>, <em>sn</em>, <em>Nd</em>, <em>Kd</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tools.html#x_sn_mul"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tools.x_sn_mul" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiply <code class="docutils literal"><span class="pre">x</span></code> by <code class="docutils literal"><span class="pre">conj(sn)</span></code> while taking care of the dimensions
+(needed for NUFFT package)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<em>gpuarray</em>) – Input array.</li>
+<li><strong>sn</strong> (<em>gpuarray</em>) – sn array.</li>
+<li><strong>Nd</strong> (<em>int</em>) – Dimension.</li>
+<li><strong>Kd</strong> (<em>int</em>) – Dimension.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Output array.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">gpuarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ARTBOX</a></h1>
+
+
+
+<p class="blurb">Accelerated Reconstruction Toolbox for MRI</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=stefan-k&repo=ARTBOX&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="reconfile.html">ReconData</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tgv.html">Total Generalized Variation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tgv_kernels.html">TGV Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cg.html">Conjugate Gradients</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tools</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="cg.html" title="previous chapter">Conjugate Gradients</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Stefan Kroboth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/tools.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/stefan-k/ARTBOX" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,165 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ARTBOX documentation &#8212; ARTBOX 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ReconData" href="reconfile.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="artbox-documentation">
+<h1>ARTBOX documentation<a class="headerlink" href="#artbox-documentation" title="Permalink to this headline">¶</a></h1>
+<p>ARTBOX is a fast image reconstruction toolbox for magnetic resonance imaging (MRI).</p>
+<p>Features:</p>
+<ul class="simple">
+<li>Conjugate gradients solver.</li>
+<li>Chambolle-Pock solver for Total Generalized Variation (TGV) regularized problems. (Based on code by <a class="reference external" href="https://imsc.uni-graz.at/bredies/index.html">Kristian Bredies</a>.)</li>
+<li>Modified Chambolle-Pock solver for TGV regularized problems called TGV-CG.</li>
+<li>Uses the full encoding matrix as forward model. Therefore it is easy to include B0 inhomogeneities, non-Cartesian trajectories and nonlinear SEMs (spatially encoding magnetic fields, also called gradients).</li>
+<li>All operations heavily accelerated with GPU code using pycuda.</li>
+<li>Modular design. Use the accelerated operators to implement your own algorithms (and ideally issue a pull request).</li>
+</ul>
+<p>This piece of software is for <em>research use only</em> and <em>not for diagnostic use</em>!</p>
+<div class="section" id="setup">
+<h2>Setup<a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h2>
+<p>To install ARTBOX, simply clone the repository, <cite>cd</cite> into the directory and install the requirements via pip.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>git clone git@github.com:stefan-k/ARTBOX.git
+<span class="nb">cd</span> ARTBOX
+pip3 install &lt; requirements.txt
+</pre></div>
+</div>
+<p>It is recommended to use a virtual environment. The following code block shows how to use <a class="reference external" href="https://virtualenvwrapper.readthedocs.io/en/latest">virtualenvwrapper</a> to set up a virtual environment:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>git clone git@github.com:stefan-k/ARTBOX.git
+<span class="nb">cd</span> ARTBOX
+mkvirtualenv --python<span class="o">=</span><span class="k">$(</span>which python3<span class="k">)</span> artbox
+pip3 install &lt; requirements.txt
+</pre></div>
+</div>
+<p>Make sure virtualenvwrapper is configured correctly.
+Once the virtual environment is created, it needs to be activated in every shell where ARTBOX code should run:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>workon artbox
+</pre></div>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="reconfile.html">ReconData</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tgv.html">Total Generalized Variation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tgv_kernels.html">TGV Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cg.html">Conjugate Gradients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">Tools</a></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">ARTBOX</a></h1>
+
+
+
+<p class="blurb">Accelerated Reconstruction Toolbox for MRI</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=stefan-k&repo=ARTBOX&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="reconfile.html">ReconData</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tgv.html">Total Generalized Variation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tgv_kernels.html">TGV Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cg.html">Conjugate Gradients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">Tools</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="reconfile.html" title="next chapter">ReconData</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Stefan Kroboth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/stefan-k/ARTBOX" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

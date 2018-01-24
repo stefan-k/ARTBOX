@@ -1,0 +1,438 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ReconData &#8212; ARTBOX 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Operators" href="operators.html" />
+    <link rel="prev" title="ARTBOX documentation" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-artbox.reconfile">
+<span id="recondata"></span><h1>ReconData<a class="headerlink" href="#module-artbox.reconfile" title="Permalink to this headline">¶</a></h1>
+<p>Handles the data</p>
+<p>Author: Stefan Kroboth &lt;<a class="reference external" href="mailto:stefan&#46;kroboth&#37;&#52;&#48;gmail&#46;com">stefan<span>&#46;</span>kroboth<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+<dl class="class">
+<dt id="artbox.reconfile.ReconData">
+<em class="property">class </em><code class="descclassname">artbox.reconfile.</code><code class="descname">ReconData</code><span class="sig-paren">(</span><em>double=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#ReconData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.ReconData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holds all the data needed for reconstructions/simulations</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>double</strong> (<em>bool</em>) – Indicates whether computations should be performed in
+single or double precision.</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.G_mat">
+<code class="descname">G_mat</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.G_mat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gradient of encoding fields (used for dephasing model, optional)
+shape = [nF, nX1, nX2, 3]</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.b0">
+<code class="descname">b0</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.b0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field inhomogeneity map
+shape = [nX1, nX2]</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.c_mat">
+<code class="descname">c_mat</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.c_mat" title="Permalink to this definition">¶</a></dt>
+<dd><p>RF sensitivity map
+shape = [nC, nX1, nX2]</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.k">
+<code class="descname">k</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.k" title="Permalink to this definition">¶</a></dt>
+<dd><p>k-space trajectory
+shape = [nF, nT]</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.ktime">
+<code class="descname">ktime</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.ktime" title="Permalink to this definition">¶</a></dt>
+<dd><p>“trajectory” corresponding to B0 map
+shape = [1, nT]</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.nC">
+<code class="descname">nC</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.nC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of RF coils</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.nF">
+<code class="descname">nF</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.nF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of encoding fields</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.nT">
+<code class="descname">nT</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.nT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of k-space sampling points</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.nX1">
+<code class="descname">nX1</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.nX1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Image space resolution in dimension 1</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.nX2">
+<code class="descname">nX2</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.nX2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Image space resolution in dimension 2</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.object">
+<code class="descname">object</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Object used for simulation (only if self.recondata is not set)
+shape = [nX1, nX2]</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.p_res">
+<code class="descname">p_res</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.p_res" title="Permalink to this definition">¶</a></dt>
+<dd><p>Product of nX1 and nX2</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.p_res32">
+<code class="descname">p_res32</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.p_res32" title="Permalink to this definition">¶</a></dt>
+<dd><p>Product of nX1 and nX2 + padding such that p_res32 % 32 == 0</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.psi">
+<code class="descname">psi</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.psi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encoding fields
+shape = [nF, nX1, nX2]</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.recondata">
+<code class="descname">recondata</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.recondata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Measured/Simulated data (only if self.shape is not set)
+shape = [nC, nT]</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.reconfile.ReconData.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>directory</em>, <em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#ReconData.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.ReconData.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save all data to <cite>directory/name.npz</cite></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>directory</strong> (<em>str</em>) – Directory to save to.</li>
+<li><strong>name</strong> (<em>str</em>) – Filename.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.reconfile.ReconData.set_Cmat">
+<code class="descname">set_Cmat</code><span class="sig-paren">(</span><em>Cmat</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#ReconData.set_Cmat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.ReconData.set_Cmat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set RF sensitiviy maps</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>Cmat</strong> (<em>np.ndarray</em>) – RF sensitivity maps
+(shape = [nC, nX1, nX2])</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.reconfile.ReconData.set_Gmat">
+<code class="descname">set_Gmat</code><span class="sig-paren">(</span><em>Gmat</em>, <em>w</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#ReconData.set_Gmat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.ReconData.set_Gmat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set G_mat which holds the derivatives of the encoding fields for the
+dephasing model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>Gmat</strong> (<em>np.ndarray</em>) – Gradients of encoding fields in spatial
+directions x, y and z.
+(shape = [nF, nX1, nX2, 3])</li>
+<li><strong>w</strong> (<em>np.ndarray</em>) – Corresponding weights.
+(shape = [3, 1])</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.reconfile.ReconData.set_SEM">
+<code class="descname">set_SEM</code><span class="sig-paren">(</span><em>SEM</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#ReconData.set_SEM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.ReconData.set_SEM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set encoding fields.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>SEM</strong> (<em>np.ndarray</em>) – Spatial encoding magnetic fields.
+(shape = [nF, nX1, nX2])</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.reconfile.ReconData.set_b0">
+<code class="descname">set_b0</code><span class="sig-paren">(</span><em>b0</em>, <em>ktime</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#ReconData.set_b0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.ReconData.set_b0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set B0 map (field inhomogeneity)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>b0</strong> (<em>np.ndarray</em>) – Field inhomogeneity map
+(shape = [nX1, nX2])</li>
+<li><strong>ktime</strong> (<em>np.ndarray</em>) – Corresponding “trajectory”
+(shape = [1, nT])</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.reconfile.ReconData.set_object">
+<code class="descname">set_object</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#ReconData.set_object"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.ReconData.set_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set object needed for simulations.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>obj</strong> (<em>np.ndarray</em>) – Array used for forward simulations.
+(shape = [nX1, nX2])</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.reconfile.ReconData.set_recondata">
+<code class="descname">set_recondata</code><span class="sig-paren">(</span><em>recondata</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#ReconData.set_recondata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.ReconData.set_recondata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set measured/simulated data needed for reconstructions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>recondata</strong> (<em>np.ndarray</em>) – Measured/simulated data.
+(shape = [nC, nT])</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.reconfile.ReconData.set_traj">
+<code class="descname">set_traj</code><span class="sig-paren">(</span><em>traj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#ReconData.set_traj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.ReconData.set_traj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set trajectory coordinates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>traj</strong> (<em>np.ndarray</em>) – Trajectory.
+(shape = [nF, nT])</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="artbox.reconfile.ReconData.set_weights">
+<code class="descname">set_weights</code><span class="sig-paren">(</span><em>weights</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#ReconData.set_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.ReconData.set_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set weights for spatially weighted Tikhonov regularization.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>weights</strong> (<em>np.ndarray</em>) – Spatial weighting in image space.
+(shape = [nX1, nX2])</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.w">
+<code class="descname">w</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.w" title="Permalink to this definition">¶</a></dt>
+<dd><p>Weights for dephasing model (optional)
+shape = [3, 1]</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="artbox.reconfile.ReconData.weights">
+<code class="descname">weights</code><em class="property"> = None</em><a class="headerlink" href="#artbox.reconfile.ReconData.weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Weights used for spatially dependent Tikhonov regularization
+shape = [nX1, nX2]</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.reconfile.load_matlab_dataset">
+<code class="descclassname">artbox.reconfile.</code><code class="descname">load_matlab_dataset</code><span class="sig-paren">(</span><em>filename</em>, <em>double=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#load_matlab_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.load_matlab_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a Matlab struct</p>
+<dl class="docutils">
+<dt>The structs name must be <cite>S</cite> and it’s format is expected to be:</dt>
+<dd><p class="first">S.k: [nF, nT]</p>
+<p>S.SEM: [nF, nX1, nX2]</p>
+<p>S.Cmat: [nC, nX1, nX2]</p>
+<p>S.b0: [nX1, nX2]</p>
+<p>S.ktime: [1, nT]</p>
+<p>S.Gmat: [nF, nX1, nX2, 3]</p>
+<p>S.w: [3, 1]</p>
+<p>S.regularization_weights: [nX1, nX2]</p>
+<p>As well as one of the following two:</p>
+<p>S.recondata: [nC, nT]</p>
+<p class="last">S.object: [nX1, nX2]</p>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> (<em>str</em>) – File to load.</li>
+<li><strong>double</strong> (<em>bool</em>) – Whether or not everything should be double or single
+precision.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ARTBOX</a></h1>
+
+
+
+<p class="blurb">Accelerated Reconstruction Toolbox for MRI</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=stefan-k&repo=ARTBOX&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ReconData</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tgv.html">Total Generalized Variation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tgv_kernels.html">TGV Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cg.html">Conjugate Gradients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">Tools</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">ARTBOX documentation</a></li>
+      <li>Next: <a href="operators.html" title="next chapter">Operators</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Stefan Kroboth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/reconfile.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/stefan-k/ARTBOX" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

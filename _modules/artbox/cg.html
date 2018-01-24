@@ -1,0 +1,560 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>artbox.cg &#8212; ARTBOX 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for artbox.cg</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright 2018 Stefan Kroboth</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 &lt;LICENSE-APACHE or</span>
+<span class="c1"># http://apache.org/licenses/LICENSE-2.0&gt; or the MIT license &lt;LICENSE-MIT or</span>
+<span class="c1"># http://opensource.org/licenses/MIT&gt;, at your option. This file may not be</span>
+<span class="c1"># copied, modified, or distributed except according to those terms.</span>
+<span class="sd">&quot;&quot;&quot;Conjugate Gradient algorithm</span>
+
+<span class="sd">Author: Stefan Kroboth &lt;stefan.kroboth@gmail.com&gt;</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># pylint: disable=too-many-instance-attributes</span>
+<span class="c1"># pylint: disable=too-many-arguments</span>
+<span class="c1"># pylint: disable=too-many-branches</span>
+<span class="c1"># pylint: disable=too-many-statements</span>
+<span class="c1"># pylint: disable=relative-import</span>
+<span class="c1"># pylint: disable=too-few-public-methods</span>
+<span class="c1"># pylint: disable=too-many-locals</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">pycuda.gpuarray</span> <span class="k">as</span> <span class="nn">gpuarray</span>
+<span class="kn">import</span> <span class="nn">pycuda.compiler</span> <span class="k">as</span> <span class="nn">compiler</span>
+<span class="kn">from</span> <span class="nn">pycuda.elementwise</span> <span class="k">import</span> <span class="n">ElementwiseKernel</span>
+<span class="kn">from</span> <span class="nn">tools</span> <span class="k">import</span> <span class="n">block_size_x</span><span class="p">,</span> <span class="n">block_size_y</span><span class="p">,</span> <span class="n">block</span><span class="p">,</span> <span class="n">get_grid</span><span class="p">,</span>\
+    <span class="n">gpuarray_copy</span><span class="p">,</span> <span class="n">add_scaled_vector_vector_double</span><span class="p">,</span> <span class="n">add_scaled_vector_vector</span><span class="p">,</span>\
+    <span class="n">save_image</span><span class="p">,</span> <span class="n">save_matlab</span><span class="p">,</span> <span class="n">add_scaled_vector</span><span class="p">,</span> <span class="n">add_scaled_vector_double</span><span class="p">,</span>\
+    <span class="n">dotc_gpu</span><span class="p">,</span> <span class="n">sub_scaled_vector_double</span><span class="p">,</span> <span class="n">sub_scaled_vector</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="n">KERNELS</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">#include &lt;pycuda-complex.hpp&gt;</span>
+
+<span class="s2">typedef pycuda::complex&lt;float&gt; complex_float;</span>
+<span class="s2">typedef pycuda::complex&lt;double&gt; complex_double;</span>
+
+<span class="s2">__global__ void inner_cg_rhs(complex_float *rhs, const complex_float *u,</span>
+<span class="s2">                             const complex_float *v, const complex_float *EHs,</span>
+<span class="s2">                             float tau, int nx, int ny,</span>
+<span class="s2">                             int chans)</span>
+<span class="s2">{</span>
+<span class="s2">  int x = blockIdx.x * </span><span class="si">%(BLOCK_SIZE_X)s</span><span class="s2"> + threadIdx.x;</span>
+<span class="s2">  int y = blockIdx.y * </span><span class="si">%(BLOCK_SIZE_Y)s</span><span class="s2"> + threadIdx.y;</span>
+
+<span class="s2">  if ((x &lt; nx) &amp;&amp; (y &lt; ny)) {</span>
+<span class="s2">    complex_float div = EHs[y*nx+x];</span>
+<span class="s2">    if (x &lt; nx-1) div += v[    y   *nx+x];</span>
+<span class="s2">    if (x &gt; 0)    div -= v[    y   *nx+x-1];</span>
+<span class="s2">    if (y &lt; ny-1) div += v[(ny+y  )*nx+x];</span>
+<span class="s2">    if (y &gt; 0)    div -= v[(ny+y-1)*nx+x];</span>
+
+<span class="s2">    rhs[y*nx+x] = u[y*nx+x] + tau*(div);</span>
+<span class="s2">  }</span>
+<span class="s2">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+<span class="n">KERNELS</span> <span class="o">=</span> <span class="n">KERNELS</span> <span class="o">%</span> <span class="p">{</span>
+    <span class="s1">&#39;BLOCK_SIZE_X&#39;</span><span class="p">:</span> <span class="n">block_size_x</span><span class="p">,</span>
+    <span class="s1">&#39;BLOCK_SIZE_Y&#39;</span><span class="p">:</span> <span class="n">block_size_y</span><span class="p">,</span>
+    <span class="p">}</span>
+
+<span class="n">MODULE</span> <span class="o">=</span> <span class="n">compiler</span><span class="o">.</span><span class="n">SourceModule</span><span class="p">(</span><span class="n">KERNELS</span><span class="p">)</span>
+<span class="n">inner_cg_rhs_func</span> <span class="o">=</span> <span class="n">MODULE</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;inner_cg_rhs&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="inner_cg_rhs"><a class="viewcode-back" href="../../cg.html#artbox.cg.inner_cg_rhs">[docs]</a><span class="k">def</span> <span class="nf">inner_cg_rhs</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">EHs</span><span class="p">,</span> <span class="n">tau</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute right hand side for inner CG method</span>
+
+<span class="sd">    ``rhs = u^n + tau * (div_h v^{n+1} + EHs)``</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        rhs (gpuarray): Right hand side.</span>
+<span class="sd">        u (gpuarray): u.</span>
+<span class="sd">        v (gpuarray): v.</span>
+<span class="sd">        EHs (gpuarray): EHs.</span>
+<span class="sd">        tau (float): tau.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inner_cg_rhs_func</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">EHs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">tau</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                      <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">block</span><span class="o">=</span><span class="n">block</span><span class="p">,</span>
+                      <span class="n">grid</span><span class="o">=</span><span class="n">get_grid</span><span class="p">(</span><span class="n">u</span><span class="p">))</span></div>
+
+<span class="n">update_m_func</span> <span class="o">=</span> \
+    <span class="n">ElementwiseKernel</span><span class="p">(</span><span class="s2">&quot;pycuda::complex&lt;float&gt; *m, </span><span class="se">\</span>
+<span class="s2">                      pycuda::complex&lt;float&gt; alpha, </span><span class="se">\</span>
+<span class="s2">                      pycuda::complex&lt;float&gt; *p_k&quot;</span><span class="p">,</span>
+                      <span class="s2">&quot;m[i] += alpha * p_k[i]&quot;</span><span class="p">,</span>
+                      <span class="s2">&quot;update_m&quot;</span><span class="p">,</span>
+                      <span class="n">preamble</span><span class="o">=</span><span class="s2">&quot;#include &lt;pycuda-complex.hpp&gt;&quot;</span><span class="p">)</span>
+
+<span class="n">update_m_double_func</span> <span class="o">=</span> \
+    <span class="n">ElementwiseKernel</span><span class="p">(</span><span class="s2">&quot;pycuda::complex&lt;double&gt; *m, </span><span class="se">\</span>
+<span class="s2">                      pycuda::complex&lt;double&gt; alpha, </span><span class="se">\</span>
+<span class="s2">                      pycuda::complex&lt;double&gt; *p_k&quot;</span><span class="p">,</span>
+                      <span class="s2">&quot;m[i] += alpha * p_k[i]&quot;</span><span class="p">,</span>
+                      <span class="s2">&quot;update_double_m&quot;</span><span class="p">,</span>
+                      <span class="n">preamble</span><span class="o">=</span><span class="s2">&quot;#include &lt;pycuda-complex.hpp&gt;&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="update_m"><a class="viewcode-back" href="../../cg.html#artbox.cg.update_m">[docs]</a><span class="k">def</span> <span class="nf">update_m</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">p_k</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Performs the following (single precision) calculation:</span>
+
+<span class="sd">    ``m = m + alpha * p_k``</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        m (gpuarray): m.</span>
+<span class="sd">        alpha (float): alpha.</span>
+<span class="sd">        p_k (gpuarray): p_k.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">update_m_func</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">alpha</span><span class="p">),</span> <span class="n">p_k</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="update_m_double"><a class="viewcode-back" href="../../cg.html#artbox.cg.update_m_double">[docs]</a><span class="k">def</span> <span class="nf">update_m_double</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">p_k</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Performs the following (double precision) calculation:</span>
+
+<span class="sd">    ``m = m + alpha * p_k``</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        m (gpuarray): m.</span>
+<span class="sd">        alpha (float): alpha.</span>
+<span class="sd">        p_k (gpuarray): p_k.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">update_m_double_func</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">alpha</span><span class="p">),</span> <span class="n">p_k</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CG"><a class="viewcode-back" href="../../cg.html#artbox.cg.CG">[docs]</a><span class="k">class</span> <span class="nc">CG</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Conjugate Gradient method</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        operator (:class:`artbox.operators.Operator`):</span>
+<span class="sd">            :class:`artbox.operators.Operator` object.</span>
+<span class="sd">        data (:class:`artbox.reconfile.ReconData`):</span>
+<span class="sd">            :class:`artbox.reconfile.ReconData` object.</span>
+<span class="sd">        out_dir (str): Output directory.</span>
+<span class="sd">        double (bool): Indicate whether computations should be performed with</span>
+<span class="sd">            double precision.</span>
+<span class="sd">        relative_tolerance (float): Relative tolerance for early stopping rule.</span>
+<span class="sd">        absolute_tolerance (float): Absolute tolerance for early stopping rule.</span>
+<span class="sd">        iters (int): Number of iterations.</span>
+<span class="sd">        no_progress (bool): If `True`, no progress bar is shown.</span>
+<span class="sd">        time_iters (bool): If `True`, all iterations are timed.</span>
+<span class="sd">        save_images (bool): If `True`, all intermediate images are saved to</span>
+<span class="sd">            disk.</span>
+<span class="sd">        save_mat (bool): If `True`, all intermediate images are saved as MATLAB</span>
+<span class="sd">            data files.</span>
+<span class="sd">        image_format (str): Format images are saved in.</span>
+<span class="sd">        verbose (int): Verbosity level.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operator</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s2">&quot;results/cg&quot;</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">relative_tolerance</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">,</span> <span class="n">absolute_tolerance</span><span class="o">=</span><span class="mf">1e-19</span><span class="p">,</span> <span class="n">iters</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+                 <span class="n">no_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">time_iters</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">save_images</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">save_mat</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">image_format</span><span class="o">=</span><span class="s1">&#39;png&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">=</span> <span class="n">operator</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_weights</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">weights</span>
+                                            <span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_weights</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_iters</span> <span class="o">=</span> <span class="n">iters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_relative_tolerance</span> <span class="o">=</span> <span class="n">relative_tolerance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_absolute_tolerance</span> <span class="o">=</span> <span class="n">absolute_tolerance</span>
+        <span class="n">src_shape</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dest_shape</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nC</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">converged</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_double</span> <span class="o">=</span> <span class="n">double</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_no_progress</span> <span class="o">=</span> <span class="n">no_progress</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_time_iters</span> <span class="o">=</span> <span class="n">time_iters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_image_format</span> <span class="o">=</span> <span class="n">image_format</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_images</span> <span class="o">=</span> <span class="n">save_images</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_matlab</span> <span class="o">=</span> <span class="n">save_mat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_noisy</span> <span class="o">=</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_out_dir</span> <span class="o">=</span> <span class="n">out_dir</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">recondata_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;recondata&#39;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+            <span class="n">recondata_gpu</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">recondata</span><span class="p">)</span>
+
+        <span class="c1"># y</span>
+        <span class="n">EHs</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">src_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="o">.</span><span class="n">adjoint</span><span class="p">(</span><span class="n">recondata_gpu</span><span class="p">,</span> <span class="n">EHs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">EHs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span> <span class="o">=</span> <span class="n">gpuarray_copy</span><span class="p">(</span><span class="n">EHs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_m</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">src_shape</span><span class="p">,</span>
+                                 <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_m</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span> <span class="o">=</span> <span class="n">gpuarray_copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rho_0</span> <span class="o">=</span> <span class="n">measure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rho_k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rho_0</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rho_0</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_absolute_tolerance</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Already converged at initialization step!&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">converged</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span> <span class="o">=</span> <span class="n">gpuarray_copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CG._forward"><a class="viewcode-back" href="../../cg.html#artbox.cg.CG._forward">[docs]</a>    <span class="k">def</span> <span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">v_k</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Forward Operator ``E^H E``</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            m (gpuarray): Input array.</span>
+<span class="sd">            v_k (gpuarray): Output array.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dest_shape</span><span class="p">,</span>
+                             <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">tmp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="o">.</span><span class="n">adjoint</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">v_k</span><span class="p">)</span>
+        <span class="c1"># v_k = v_k + bla.*m</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_double</span><span class="p">:</span>
+            <span class="n">add_scaled_vector_vector_double</span><span class="p">(</span><span class="n">v_k</span><span class="p">,</span> <span class="n">v_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weights</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">add_scaled_vector_vector</span><span class="p">(</span><span class="n">v_k</span><span class="p">,</span> <span class="n">v_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weights</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+        <span class="n">tmp</span><span class="o">.</span><span class="n">gpudata</span><span class="o">.</span><span class="n">free</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="CG.run"><a class="viewcode-back" href="../../cg.html#artbox.cg.CG.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Runs the conjugate gradient method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_progress</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">progressbar</span> <span class="k">import</span> <span class="n">ProgressBar</span>
+            <span class="n">progress</span> <span class="o">=</span> <span class="n">ProgressBar</span><span class="p">()</span>
+            <span class="n">iter_range</span> <span class="o">=</span> <span class="n">progress</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_iters</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">iter_range</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_iters</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_progress</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_iters</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">time</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">iter_range</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_progress</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Iteration &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_progress</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_iters</span><span class="p">:</span>
+                    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">)</span>
+                <span class="n">sigma_k</span> <span class="o">=</span> <span class="n">measure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">)</span>
+                <span class="n">alpha_k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rho_k</span> <span class="o">/</span> <span class="n">sigma_k</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_double</span><span class="p">:</span>
+                    <span class="n">update_m_double</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_m</span><span class="p">,</span> <span class="n">alpha_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span><span class="p">)</span>
+                    <span class="n">sub_scaled_vector_double</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">,</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">,</span>
+                                             <span class="n">alpha_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">update_m</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_m</span><span class="p">,</span> <span class="n">alpha_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span><span class="p">)</span>
+                    <span class="n">sub_scaled_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">,</span>
+                                      <span class="n">alpha_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span> <span class="o">=</span> <span class="n">gpuarray_copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">)</span>
+                <span class="n">rho_k_plus_1</span> <span class="o">=</span> <span class="n">measure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">)</span>
+                <span class="n">rho_k_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">rho_k_plus_1</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="n">rho_k_t</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rho_0</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_relative_tolerance</span><span class="p">)</span> \
+                   <span class="ow">or</span> <span class="p">(</span><span class="n">rho_k_t</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_absolute_tolerance</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Converged.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">converged</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">break</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_double</span><span class="p">:</span>
+                    <span class="n">add_scaled_vector_double</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">,</span>
+                                             <span class="n">rho_k_plus_1</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">_rho_k</span><span class="p">,</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">add_scaled_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">,</span>
+                                      <span class="n">rho_k_plus_1</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">_rho_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_rho_k</span> <span class="o">=</span> <span class="n">rho_k_plus_1</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_noisy</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; Residual=&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">rho_k_t</span><span class="p">))</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_progress</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_iters</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Elapsed time for iteration &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;: &quot;</span> <span class="o">+</span>
+                          <span class="nb">str</span><span class="p">(</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; seconds&quot;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save_images</span><span class="p">:</span>
+                    <span class="n">save_image</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_m</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX1</span><span class="p">,</span>
+                                                            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX2</span><span class="p">)),</span>
+                               <span class="bp">self</span><span class="o">.</span><span class="n">_out_dir</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image_format</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save_matlab</span><span class="p">:</span>
+                    <span class="n">save_matlab</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_m</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX1</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX2</span><span class="p">),</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_out_dir</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reconstruction aborted (CTRL-C) at iteration &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">save_image</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_m</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX1</span><span class="p">,</span>
+                                                    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX2</span><span class="p">)),</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">_out_dir</span><span class="p">,</span> <span class="s2">&quot;result&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image_format</span><span class="p">)</span>
+            <span class="n">save_matlab</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_m</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX1</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX2</span><span class="p">),</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_out_dir</span><span class="p">,</span> <span class="s2">&quot;result&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">=</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_m</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX2</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="InnerCG"><a class="viewcode-back" href="../../cg.html#artbox.cg.InnerCG">[docs]</a><span class="k">class</span> <span class="nc">InnerCG</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class for conjugate gradient method that solves the update step of ``u``</span>
+<span class="sd">    in the TGV-CG reconstruction.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        Operator (:class:`artbox.operators.Operator`):</span>
+<span class="sd">            :class:`artbox.operators.Operator` object.</span>
+<span class="sd">        data (:class:`artbox.reconfile.ReconData`):</span>
+<span class="sd">            :class:`artbox.reconfile.ReconData` object.</span>
+<span class="sd">        u (gpuarray): u.</span>
+<span class="sd">        v (gpuarray): v.</span>
+<span class="sd">        double (bool): Indicate whether computations should be performed with</span>
+<span class="sd">            double precision. (TODO!)</span>
+<span class="sd">        tau (float): tau.</span>
+<span class="sd">        inner_iters (int): Number of iterations.</span>
+<span class="sd">        relative_tolerance (float): Relative tolerance for early stopping rule.</span>
+<span class="sd">        absolute_tolerance (float): Absolute tolerance for early stopping rule.</span>
+<span class="sd">        verbose (int): Verbosity level.</span>
+<span class="sd">        EHs (gpuarray): Inital vector.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operator</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">inner_iters</span><span class="p">,</span>
+                 <span class="n">relative_tolerance</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">,</span>
+                 <span class="n">absolute_tolerance</span><span class="o">=</span><span class="mf">1e-19</span><span class="p">,</span>
+                 <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">EHs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">=</span> <span class="n">operator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_iters</span> <span class="o">=</span> <span class="n">inner_iters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tau</span> <span class="o">=</span> <span class="n">tau</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_relative_tolerance</span> <span class="o">=</span> <span class="n">relative_tolerance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_absolute_tolerance</span> <span class="o">=</span> <span class="n">absolute_tolerance</span>
+        <span class="n">src_shape</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nX2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dest_shape</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">nC</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">converged</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span> <span class="o">=</span> <span class="p">(</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">recondata_gpu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="o">.</span><span class="n">dgpu</span><span class="p">[</span><span class="s1">&#39;recondata&#39;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+            <span class="n">recondata_gpu</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">recondata</span><span class="p">)</span>
+
+        <span class="c1"># y</span>
+        <span class="k">if</span> <span class="n">EHs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">EHs</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">src_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex64</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="o">.</span><span class="n">adjoint</span><span class="p">(</span><span class="n">recondata_gpu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">EHs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">EHs</span> <span class="o">=</span> <span class="n">EHs</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_m</span> <span class="o">=</span> <span class="n">u</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rhs</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">EHs</span><span class="p">)</span>
+        <span class="n">inner_cg_rhs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rhs</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">EHs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tau</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">EHs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">EHs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span> <span class="o">=</span> <span class="n">gpuarray_copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rhs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_m</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">)</span>  <span class="c1"># initial guess</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span> <span class="o">=</span> <span class="n">gpuarray_copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rho_0</span> <span class="o">=</span> <span class="n">measure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rho_k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rho_0</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rho_0</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_absolute_tolerance</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Already converged!&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">converged</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span> <span class="o">=</span> <span class="n">gpuarray_copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">)</span>
+
+<div class="viewcode-block" id="InnerCG._forward"><a class="viewcode-back" href="../../cg.html#artbox.cg.InnerCG._forward">[docs]</a>    <span class="k">def</span> <span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">v_k</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Forward Operator ``E^H E``</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            m (gpuarray): Input array.</span>
+<span class="sd">            v_k (gpuarray): Output array.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dest_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex64</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">tmp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="o">.</span><span class="n">adjoint</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">v_k</span><span class="p">)</span>
+        <span class="n">add_scaled_vector</span><span class="p">(</span><span class="n">v_k</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tau</span><span class="p">,</span> <span class="n">v_k</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="InnerCG.run"><a class="viewcode-back" href="../../cg.html#artbox.cg.InnerCG.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Runs the conjugate gradient method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iters</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Inner CG Iteration &quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">)</span>
+                <span class="n">sigma_k</span> <span class="o">=</span> <span class="n">measure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">)</span>
+                <span class="n">alpha_k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rho_k</span> <span class="o">/</span> <span class="n">sigma_k</span>
+                <span class="n">update_m</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_m</span><span class="p">,</span> <span class="n">alpha_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span><span class="p">)</span>
+                <span class="n">sub_scaled_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">,</span> <span class="n">alpha_k</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span> <span class="o">=</span> <span class="n">gpuarray_copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">)</span>
+                <span class="n">rho_k_plus_1</span> <span class="o">=</span> <span class="n">measure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_residual_k</span><span class="p">)</span>
+                <span class="n">rho_k_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">rho_k_plus_1</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="n">rho_k_t</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rho_0</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_relative_tolerance</span><span class="p">)</span> \
+                   <span class="ow">or</span> <span class="p">(</span><span class="n">rho_k_t</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_absolute_tolerance</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Converged at Iteration &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">converged</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">=</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span>
+                    <span class="k">return</span>
+
+                <span class="n">add_scaled_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v_k</span><span class="p">,</span>
+                                  <span class="n">rho_k_plus_1</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">_rho_k</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">_p_k</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_rho_k</span> <span class="o">=</span> <span class="n">rho_k_plus_1</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;   Residual=&quot;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">rho_k_t</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="k">raise</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iteration</span> <span class="o">=</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span></div></div>
+
+
+<div class="viewcode-block" id="measure"><a class="viewcode-back" href="../../cg.html#artbox.cg.measure">[docs]</a><span class="k">def</span> <span class="nf">measure</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute dot product of ``x`` and ``y``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (gpuarray): x.</span>
+<span class="sd">        y (gpuarray): y.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">dotc_gpu</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">ARTBOX</a></h1>
+
+
+
+<p class="blurb">Accelerated Reconstruction Toolbox for MRI</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=stefan-k&repo=ARTBOX&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../reconfile.html">ReconData</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tgv.html">Total Generalized Variation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tgv_kernels.html">TGV Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cg.html">Conjugate Gradients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools.html">Tools</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Stefan Kroboth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+    <a href="https://github.com/stefan-k/ARTBOX" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

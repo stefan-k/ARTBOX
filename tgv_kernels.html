@@ -1,0 +1,389 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>TGV Kernels &#8212; ARTBOX 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Conjugate Gradients" href="cg.html" />
+    <link rel="prev" title="Total Generalized Variation" href="tgv.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tgv-kernels">
+<h1>TGV Kernels<a class="headerlink" href="#tgv-kernels" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="kernels">
+<h2>Kernels<a class="headerlink" href="#kernels" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default"><div class="highlight"><pre><span></span>  #include &lt;pycuda-complex.hpp&gt;
+
+  typedef pycuda::complex&lt;float&gt; complex_float;
+  typedef pycuda::complex&lt;double&gt; complex_double;
+
+__global__ void tgv_update_p(complex_float *u, complex_float *w,
+                             complex_float *p, float alpha_inv, float tau_d,
+                             int nx, int ny)
+{
+  int x = blockIdx.x * %(BLOCK_SIZE_X)s + threadIdx.x;
+  int y = blockIdx.y * %(BLOCK_SIZE_Y)s + threadIdx.y;
+
+  if ((x &lt; nx) &amp;&amp; (y &lt; ny)) {
+    float pabs;
+
+    complex_float u00 =              u[y*nx     + x];
+    complex_float u10 = (x &lt; nx-1) ? u[y*nx     + x+1] : u00;
+    complex_float u01 = (y &lt; ny-1) ? u[(y+1)*nx + x]   : u00;
+
+    complex_float dxp = u10-u00;
+    complex_float dyp = u01-u00;
+
+    complex_float px = p[y*nx+x]
+                     + tau_d*(dxp - w[y*nx+x]);
+    complex_float py = p[(ny+y)*nx+x]
+                     + tau_d*(dyp - w[(ny+y)*nx+x]);
+
+    pabs = sqrtf(abs(px)*abs(px) + abs(py)*abs(py))*alpha_inv;
+    pabs = (pabs &gt; 1.0f) ? 1.0f/pabs : 1.0f;
+
+    p[y*nx     +x] = px*pabs;
+    p[(ny+y)*nx+x] = py*pabs;
+  }
+}
+
+__global__ void tgv_update_q(complex_float *w, complex_float *q,
+                             float alpha_inv, float tau_d, int nx, int ny)
+{
+  int x = blockIdx.x * %(BLOCK_SIZE_X)s + threadIdx.x;
+  int y = blockIdx.y * %(BLOCK_SIZE_Y)s + threadIdx.y;
+
+  if ((x &lt; nx) &amp;&amp; (y &lt; ny)) {
+    float qabs;
+
+    complex_float wx00 =              w[(y  )*nx+x];
+    complex_float wx10 = (x &lt; nx-1) ? w[(y  )*nx+x+1] : wx00;
+    complex_float wx01 = (y &lt; ny-1) ? w[(y+1)*nx+x]   : wx00;
+
+    complex_float wy00 =              w[(ny+y  )*nx+x];
+    complex_float wy10 = (x &lt; nx-1) ? w[(ny+y  )*nx+x+1] : wy00;
+    complex_float wy01 = (y &lt; ny-1) ? w[(ny+y+1)*nx+x]   : wy00;
+
+    complex_float wxx = wx10-wx00;
+    complex_float wyy = wy01-wy00;
+    complex_float wxy = 0.5f*(wx01-wx00+wy10-wy00);
+
+    complex_float qxx = q[(     y)*nx+x] + tau_d*wxx;
+    complex_float qyy = q[(  ny+y)*nx+x] + tau_d*wyy;
+    complex_float qxy = q[(2*ny+y)*nx+x] + tau_d*wxy;
+
+    qabs = sqrtf(abs(qxx)*abs(qxx) + abs(qyy)*abs(qyy)
+           + 2.0f*abs(qxy)*abs(qxy))*alpha_inv;
+    qabs = (qabs &gt; 1.0f) ? 1.0f/qabs : 1.0f;
+
+    q[(     y)*nx+x] = qxx*qabs;
+    q[(  ny+y)*nx+x] = qyy*qabs;
+    q[(2*ny+y)*nx+x] = qxy*qabs;
+  }
+}
+
+__global__ void tgv_update_w(complex_float *w, complex_float *p,
+                             complex_float *q, float tau_p, int nx, int ny)
+{
+  complex_float div1, div2;
+
+  int x = blockIdx.x * %(BLOCK_SIZE_X)s + threadIdx.x;
+  int y = blockIdx.y * %(BLOCK_SIZE_Y)s + threadIdx.y;
+
+  if ((x &lt; nx) &amp;&amp; (y &lt; ny)) {
+    div1 = p[y*nx+x];
+    if (x &lt; nx-1) div1 += q[(     y  )*nx+x];
+    if (x &gt; 0)    div1 -= q[(     y  )*nx+x-1];
+    if (y &lt; ny-1) div1 += q[(2*ny+y  )*nx+x];
+    if (y &gt; 0)    div1 -= q[(2*ny+y-1)*nx+x];
+
+    div2 = p[(ny+y)*nx+x];
+    if (x &lt; nx-1) div2 += q[(2*ny+y  )*nx+x];
+    if (x &gt; 0)    div2 -= q[(2*ny+y  )*nx+x-1];
+    if (y &lt; ny-1) div2 += q[(  ny+y  )*nx+x];
+    if (y &gt; 0)    div2 -= q[(  ny+y-1)*nx+x];
+
+    w[(   y)*nx+x] += tau_p*div1;
+    w[(ny+y)*nx+x] += tau_p*div2;
+  }
+}
+
+__global__ void tgv_update_u(complex_float *u, complex_float *p,
+                             complex_float *Kadjv, float tau_p, int nx, int ny)
+{
+  int x = blockIdx.x * %(BLOCK_SIZE_X)s + threadIdx.x;
+  int y = blockIdx.y * %(BLOCK_SIZE_Y)s + threadIdx.y;
+
+  if ((x &lt; nx) &amp;&amp; (y &lt; ny)) {
+    complex_float div = -Kadjv[y*nx+x];
+    if (x &lt; nx-1) div += p[(   y  )*nx+x];
+    if (x &gt; 0)    div -= p[(   y  )*nx+x-1];
+    if (y &lt; ny-1) div += p[(ny+y  )*nx+x];
+    if (y &gt; 0)    div -= p[(ny+y-1)*nx+x];
+
+    u[y*nx+x] += tau_p*div;
+  }
+}
+</pre></div>
+</div>
+</div>
+<div class="section" id="module-artbox.tgv_kernels">
+<span id="module"></span><h2>Module<a class="headerlink" href="#module-artbox.tgv_kernels" title="Permalink to this headline">¶</a></h2>
+<p>TGV GPU Kernels</p>
+<p>Based on code by Kristian Bredies &lt;<a class="reference external" href="mailto:kristian&#46;bredies&#37;&#52;&#48;uni-graz&#46;at">kristian<span>&#46;</span>bredies<span>&#64;</span>uni-graz<span>&#46;</span>at</a>&gt;</p>
+<p>Author: Stefan Kroboth &lt;<a class="reference external" href="mailto:stefan&#46;kroboth&#37;&#52;&#48;gmail&#46;com">stefan<span>&#46;</span>kroboth<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+<dl class="function">
+<dt id="artbox.tgv_kernels.tgv_update_p">
+<code class="descclassname">artbox.tgv_kernels.</code><code class="descname">tgv_update_p</code><span class="sig-paren">(</span><em>u</em>, <em>w</em>, <em>p</em>, <em>tau_d</em>, <em>alpha</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tgv_kernels.html#tgv_update_p"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tgv_kernels.tgv_update_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update p</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>u</strong> (<em>gpuarray</em>) – <ol class="loweralpha" start="21">
+<li></li>
+</ol>
+</li>
+<li><strong>w</strong> (<em>gpuarray</em>) – <ol class="loweralpha" start="23">
+<li></li>
+</ol>
+</li>
+<li><strong>p</strong> (<em>gpuarray</em>) – <ol class="loweralpha" start="16">
+<li></li>
+</ol>
+</li>
+<li><strong>tau_d</strong> (<em>float</em>) – tau_d.</li>
+<li><strong>alpha</strong> (<em>float</em>) – alpha.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tgv_kernels.tgv_update_q">
+<code class="descclassname">artbox.tgv_kernels.</code><code class="descname">tgv_update_q</code><span class="sig-paren">(</span><em>w</em>, <em>q</em>, <em>tau_d</em>, <em>alpha</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tgv_kernels.html#tgv_update_q"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tgv_kernels.tgv_update_q" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update q</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>w</strong> (<em>gpuarray</em>) – <ol class="loweralpha" start="23">
+<li></li>
+</ol>
+</li>
+<li><strong>q</strong> (<em>gpuarray</em>) – <ol class="loweralpha" start="17">
+<li></li>
+</ol>
+</li>
+<li><strong>tau_d</strong> (<em>float</em>) – tau_d.</li>
+<li><strong>alpha</strong> (<em>float</em>) – alpha.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tgv_kernels.tgv_update_u">
+<code class="descclassname">artbox.tgv_kernels.</code><code class="descname">tgv_update_u</code><span class="sig-paren">(</span><em>u</em>, <em>p</em>, <em>f</em>, <em>tau_p</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tgv_kernels.html#tgv_update_u"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tgv_kernels.tgv_update_u" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update u</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>u</strong> (<em>gpuarray</em>) – <ol class="loweralpha" start="21">
+<li></li>
+</ol>
+</li>
+<li><strong>p</strong> (<em>gpuarray</em>) – <ol class="loweralpha" start="16">
+<li></li>
+</ol>
+</li>
+<li><strong>f</strong> (<em>gpuarray</em>) – <ol class="loweralpha" start="6">
+<li></li>
+</ol>
+</li>
+<li><strong>tau_p</strong> (<em>float</em>) – tau_p.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tgv_kernels.tgv_update_v">
+<code class="descclassname">artbox.tgv_kernels.</code><code class="descname">tgv_update_v</code><span class="sig-paren">(</span><em>v</em>, <em>Ku</em>, <em>f</em>, <em>tau_d</em>, <em>lin_constr=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tgv_kernels.html#tgv_update_v"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tgv_kernels.tgv_update_v" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update v</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>v</strong> (<em>gpuarray</em>) – <ol class="loweralpha" start="22">
+<li></li>
+</ol>
+</li>
+<li><strong>Ku</strong> (<em>gpuarray</em>) – Ku.</li>
+<li><strong>f</strong> (<em>gpuarray</em>) – <ol class="loweralpha" start="6">
+<li></li>
+</ol>
+</li>
+<li><strong>tau_d</strong> (<em>float</em>) – tau_d.</li>
+<li><strong>lin_constr</strong> (<em>bool</em>) – lin_constr.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.tgv_kernels.tgv_update_w">
+<code class="descclassname">artbox.tgv_kernels.</code><code class="descname">tgv_update_w</code><span class="sig-paren">(</span><em>w</em>, <em>p</em>, <em>q</em>, <em>tau_p</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/tgv_kernels.html#tgv_update_w"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.tgv_kernels.tgv_update_w" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update w</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>w</strong> (<em>gpuarray</em>) – <ol class="loweralpha" start="23">
+<li></li>
+</ol>
+</li>
+<li><strong>p</strong> (<em>gpuarray</em>) – <ol class="loweralpha" start="16">
+<li></li>
+</ol>
+</li>
+<li><strong>q</strong> (<em>gpuarray</em>) – <ol class="loweralpha" start="17">
+<li></li>
+</ol>
+</li>
+<li><strong>tau_p</strong> (<em>float</em>) – tau_p.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ARTBOX</a></h1>
+
+
+
+<p class="blurb">Accelerated Reconstruction Toolbox for MRI</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=stefan-k&repo=ARTBOX&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="reconfile.html">ReconData</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tgv.html">Total Generalized Variation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">TGV Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cg.html">Conjugate Gradients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">Tools</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="tgv.html" title="previous chapter">Total Generalized Variation</a></li>
+      <li>Next: <a href="cg.html" title="next chapter">Conjugate Gradients</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Stefan Kroboth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/tgv_kernels.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/stefan-k/ARTBOX" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>
