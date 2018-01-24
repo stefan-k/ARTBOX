@@ -23,12 +23,30 @@ This piece of software is for *research use only* and *not for diagnostic use*!
 Setup
 -----
 
-To install ARTBOX, simply clone the repository and `cd` into the directory.
+To install ARTBOX, simply clone the repository, `cd` into the directory and install the requirements via pip.
 
 .. code-block:: bash
 
    git clone git@github.com:stefan-k/ARTBOX.git
    cd ARTBOX
+   pip3 install < requirements.txt
+
+It is recommended to use a virtual environment. The following code block shows how to use `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest>`_ to set up a virtual environment:
+
+.. code-block:: bash
+
+   git clone git@github.com:stefan-k/ARTBOX.git
+   cd ARTBOX
+   mkvirtualenv --python=$(which python3) artbox
+   pip3 install < requirements.txt
+
+Make sure virtualenvwrapper is configured correctly.
+Once the virtual environment is created, it needs to be activated in every shell where ARTBOX code should run:
+
+.. code-block:: bash
+
+   workon artbox
+
 
 .. toctree::
    :maxdepth: 1
