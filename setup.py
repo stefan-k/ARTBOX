@@ -12,7 +12,7 @@ from shutil import rmtree
 from setuptools import find_packages, setup, Command
 
 # Package meta-data.
-NAME = 'ARTBOX'
+NAME = 'artbox'
 DESCRIPTION = 'Accelerated Reconstruction Toolbox'
 URL = 'https://github.com/stefan-k/ARTBOX'
 EMAIL = 'stefan.kroboth@gmail.com'
