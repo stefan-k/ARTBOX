@@ -86,7 +86,7 @@ setup(
     #  packages=find_packages(exclude=('tests',)),
     # If your package is a single module, use this instead of 'packages':
     py_modules=['artbox'],
-    scripts=['bin/artbox'],
+    scripts=[],
 
     # entry_points={
     #     'console_scripts': ['mycli=mymodule:cli'],
