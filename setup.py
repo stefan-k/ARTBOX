@@ -20,7 +20,7 @@ AUTHOR = 'Stefan Kroboth'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    'Pillow', 'argparse', 'numpy', 'progressbar', 'pycuda', 'scipy',
+    'Pillow', 'argparse', 'numpy', 'progressbar2', 'pycuda', 'scipy',
 ]
 
 # The rest you shouldn't have to touch too much :)

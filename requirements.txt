@@ -1,4 +1,4 @@
-progressbar33
+progressbar2
 numpy
 pycuda
 Pillow
