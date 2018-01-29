@@ -35,7 +35,7 @@ res = 128;
 sim_res = 8*res;
 
 % ARTBOX path
-artbox = '../../artbox/artbox.py';
+artbox = '../../artbox-cli.py';
 
 % RF sensitivity maps
 rf_file = 'RF.mat';

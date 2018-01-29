@@ -44,7 +44,7 @@ $ cd ARTBOX
 For detailed information take a look at the help message:
 
 ```console
-$ artbox/artbox.py --help
+$ artbox-cli.py --help
 ```
 
 ## Examples
