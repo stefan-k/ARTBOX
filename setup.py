@@ -84,7 +84,7 @@ setup(
     author_email=EMAIL,
     url=URL,
     #  packages=find_packages(exclude=('tests',)),
-    packages=['artbox']
+    packages=['artbox'],
     # If your package is a single module, use this instead of 'packages':
     #  py_modules=['artbox'],
     scripts=[],
