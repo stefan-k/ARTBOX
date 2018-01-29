@@ -18,14 +18,15 @@ Author: Stefan Kroboth <stefan.kroboth@gmail.com>
 # pylint: disable=too-many-statements
 from __future__ import print_function
 import os
-from parser import args, parser
+from artbox.parser import args, parser
 from time import time
 os.environ['CUDA_DEVICE'] = str(args.gpu)
 import pycuda.autoinit
-from reconfile import load_matlab_dataset
-from operators import Operator
-from cg import CG
-from tgv import tgv
+from artbox.reconfile import load_matlab_dataset
+from artbox.operators import Operator
+from artbox.cg import CG
+from artbox.tgv import tgv
+from artbox.tools import create_dir, gpu_info
 
 
 def main():
@@ -34,7 +35,6 @@ def main():
     # set environment variable to use chosen GPU device
     # this needs to be done *before* any GPU stuff is done
     #  os.environ['CUDA_DEVICE'] = str(args.gpu)
-    from tools import create_dir, gpu_info
 
     # Print GPU information
     if args.gpu_info:

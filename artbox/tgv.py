@@ -23,8 +23,8 @@ from __future__ import print_function
 import pycuda.gpuarray as gpuarray
 import pycuda.driver as cuda
 import numpy as np
-from tools import save_image, save_matlab, gpuarray_copy
-import tgv_kernels as tgvk
+from artbox.tools import save_image, save_matlab, gpuarray_copy
+import artbox.tgv_kernels as tgvk
 
 
 def tgv(op, out_dir, alpha=4e-5, tau_p=0.625, tau_d=0.125, reduction=2**-8,

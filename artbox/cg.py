@@ -21,7 +21,7 @@ from __future__ import print_function
 import pycuda.gpuarray as gpuarray
 import pycuda.compiler as compiler
 from pycuda.elementwise import ElementwiseKernel
-from tools import block_size_x, block_size_y, block, get_grid,\
+from artbox.tools import block_size_x, block_size_y, block, get_grid,\
     gpuarray_copy, add_scaled_vector_vector_double, add_scaled_vector_vector,\
     save_image, save_matlab, add_scaled_vector, add_scaled_vector_double,\
     dotc_gpu, sub_scaled_vector_double, sub_scaled_vector

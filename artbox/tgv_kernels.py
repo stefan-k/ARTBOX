@@ -17,7 +17,7 @@ import pycuda.autoinit
 import pycuda.compiler as compiler
 from pycuda.elementwise import ElementwiseKernel
 import numpy as np
-from tools import block_size_x, block_size_y, block, get_grid
+from artbox.tools import block_size_x, block_size_y, block, get_grid
 
 # Definition of GPU kernels. Should start at line 25 and end at 136 (adapt docs
 # otherwise!)

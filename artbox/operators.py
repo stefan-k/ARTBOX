@@ -24,7 +24,7 @@ import pycuda.gpuarray as gpuarray
 import pycuda.compiler as compiler
 import pycuda.curandom as curandom
 import numpy as np
-from tools import next_power_of_2, gpuarray_copy, dotc_gpu
+from artbox.tools import next_power_of_2, gpuarray_copy, dotc_gpu
 
 KERNELS = """
   #include <pycuda-complex.hpp>
