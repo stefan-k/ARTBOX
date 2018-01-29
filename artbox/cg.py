@@ -295,12 +295,14 @@ class CG(object):
         except KeyboardInterrupt:
             print("Reconstruction aborted (CTRL-C) at iteration " + str(i))
         finally:
-            save_image(np.abs(self._m.get().reshape(self._data.nX1,
-                                                    self._data.nX2)),
-                       self._out_dir, "result", self._image_format)
-            save_matlab(self._m.get().reshape(self._data.nX1,
-                                              self._data.nX2),
-                        self._out_dir, "result")
+            if self._save_images:
+                save_image(np.abs(self._m.get().reshape(self._data.nX1,
+                                                        self._data.nX2)),
+                           self._out_dir, "result", self._image_format)
+            if self._save_matlab:
+                save_matlab(self._m.get().reshape(self._data.nX1,
+                                                  self._data.nX2),
+                            self._out_dir, "result")
             self.iteration = i+1
         return (self._m.get().reshape(self._data.nX1, self._data.nX2),
                 self.iteration)
