@@ -216,5 +216,8 @@ autodoc_mock_imports = ['pycuda',
                         'pycuda.compiler',
                         'pycuda.elementwise',
                         'numpy',
+                        'scipy',
+                        'scipy.io',
+                        'scipy.linalg',
                         'argparse',
                        ]
