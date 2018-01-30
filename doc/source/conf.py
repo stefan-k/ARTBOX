@@ -209,7 +209,8 @@ epub_copyright = copyright
 epub_exclude_files = ['search.html']
 
 # -- Mock objects ---------------------------------------------------------
-autodoc_mock_imports = ['pycuda.autoinit',
+autodoc_mock_imports = ['pycuda',
+                        'pycuda.autoinit',
                         'parser',
                         'pycuda.gpuarray',
                         'pycuda.compiler',
