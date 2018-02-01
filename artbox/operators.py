@@ -56,40 +56,40 @@ KERNELS = """
                               %(PRECISION)s* b0, %(PRECISION)s* ktime)
   {
     %(PRECISION)s temp = 0;
-//  #ifdef G_MAT
-//    %(PRECISION)s row1 = 0;
-//    %(PRECISION)s row2 = 0;
-//    %(PRECISION)s row3 = 0;
-//  #endif
+  #ifdef G_MAT
+    %(PRECISION)s row1 = 0;
+    %(PRECISION)s row2 = 0;
+    %(PRECISION)s row3 = 0;
+  #endif
     complex result(0.0,0.0);
     if(iP < %(P_RES)s && iK < %(K_RES)s)
     {
       for(int i = 0; i < %(NUM_SEM)s; i++)
       {
         temp += k_mat[iK + i * %(K_RES)s] * psi_mat[iP + i * %(P_RES)s];
-//  #ifdef G_MAT
-//        row1 += k_mat[iK + i * %(K_RES)s]
-//                * g_mat[iP + i * %(P_RES)s];
-//        row2 += k_mat[iK + i * %(K_RES)s]
-//                * g_mat[iP + i * %(P_RES)s +     %(P_RES)s * %(NUM_SEM)s];
-//        row3 += k_mat[iK + i * %(K_RES)s]
-//                * g_mat[iP + i * %(P_RES)s + 2 * %(P_RES)s * %(NUM_SEM)s];
-//  #endif
+  #ifdef G_MAT
+        row1 += k_mat[iK + i * %(K_RES)s]
+                * g_mat[iP + i * %(P_RES)s];
+        row2 += k_mat[iK + i * %(K_RES)s]
+                * g_mat[iP + i * %(P_RES)s +     %(P_RES)s * %(NUM_SEM)s];
+        row3 += k_mat[iK + i * %(K_RES)s]
+                * g_mat[iP + i * %(P_RES)s + 2 * %(P_RES)s * %(NUM_SEM)s];
+  #endif
       }
-//  #ifdef B0_MAT
-//      %(PRECISION)s b0_c = b0[iP] * ktime[iK];
-//  #endif
-//  #ifdef G_MAT
-//      result = complex(cos(temp), sin(-temp)) * sinc(%(W1)s * row1)
-//               * sinc(%(W2)s * row2) * sinc(%(W3)s * row3)
-//  #else
-//      result = complex(cos(temp), sin(-temp))
-//  #endif
-//  #ifdef B0_MAT
-//      / complex(cos(b0_c), sin(-b0_c));
-//  #else
-//      ;
-//  #endif
+  #ifdef B0_MAT
+      %(PRECISION)s b0_c = b0[iP] * ktime[iK];
+  #endif
+  #ifdef G_MAT
+      result = complex(cos(temp), sin(-temp)) * sinc(%(W1)s * row1)
+               * sinc(%(W2)s * row2) * sinc(%(W3)s * row3)
+  #else
+      result = complex(cos(temp), sin(-temp))
+  #endif
+  #ifdef B0_MAT
+      / complex(cos(b0_c), sin(-b0_c));
+  #else
+      ;
+  #endif
 
       result = complex(cos(temp), sin(-temp));
     }
