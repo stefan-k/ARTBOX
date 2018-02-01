@@ -65,8 +65,8 @@
 <span class="kn">import</span> <span class="nn">pycuda.gpuarray</span> <span class="k">as</span> <span class="nn">gpuarray</span>
 <span class="kn">import</span> <span class="nn">pycuda.driver</span> <span class="k">as</span> <span class="nn">cuda</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">artbox.tools</span> <span class="k">import</span> <span class="n">save_image</span><span class="p">,</span> <span class="n">save_matlab</span><span class="p">,</span> <span class="n">gpuarray_copy</span>
-<span class="kn">import</span> <span class="nn">artbox.tgv_kernels</span> <span class="k">as</span> <span class="nn">tgvk</span>
+<span class="kn">from</span> <span class="nn">tools</span> <span class="k">import</span> <span class="n">save_image</span><span class="p">,</span> <span class="n">save_matlab</span><span class="p">,</span> <span class="n">gpuarray_copy</span>
+<span class="kn">import</span> <span class="nn">tgv_kernels</span> <span class="k">as</span> <span class="nn">tgvk</span>
 
 
 <div class="viewcode-block" id="tgv"><a class="viewcode-back" href="../../tgv.html#artbox.tgv.tgv">[docs]</a><span class="k">def</span> <span class="nf">tgv</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">4e-5</span><span class="p">,</span> <span class="n">tau_p</span><span class="o">=</span><span class="mf">0.625</span><span class="p">,</span> <span class="n">tau_d</span><span class="o">=</span><span class="mf">0.125</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="mi">2</span><span class="o">**-</span><span class="mi">8</span><span class="p">,</span>
