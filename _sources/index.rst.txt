@@ -14,7 +14,7 @@ It furthermore considers the reconstructed pixels to be box functions instead of
 
 Several image reconstruction methods (CG, TGV-regularization) are implemented.
 
-Note: Please be aware that parts of this software may be refactored and therefore the API may change.
+Note: Please be aware that parts of this software may be refactored and therefore the API may change. Furthermore the documentation and examples are work in progress. Please report any problems you encounter (`Github Issues <https://github.com/stefan-k/ARTBOX/issues>`_).
 
 Features:
 
