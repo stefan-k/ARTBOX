@@ -98,40 +98,40 @@
 <span class="s2">                              </span><span class="si">%(PRECISION)s</span><span class="s2">* b0, </span><span class="si">%(PRECISION)s</span><span class="s2">* ktime)</span>
 <span class="s2">  {</span>
 <span class="s2">    </span><span class="si">%(PRECISION)s</span><span class="s2"> temp = 0;</span>
-<span class="s2">//  #ifdef G_MAT</span>
-<span class="s2">//    </span><span class="si">%(PRECISION)s</span><span class="s2"> row1 = 0;</span>
-<span class="s2">//    </span><span class="si">%(PRECISION)s</span><span class="s2"> row2 = 0;</span>
-<span class="s2">//    </span><span class="si">%(PRECISION)s</span><span class="s2"> row3 = 0;</span>
-<span class="s2">//  #endif</span>
+<span class="s2">  #ifdef G_MAT</span>
+<span class="s2">    </span><span class="si">%(PRECISION)s</span><span class="s2"> row1 = 0;</span>
+<span class="s2">    </span><span class="si">%(PRECISION)s</span><span class="s2"> row2 = 0;</span>
+<span class="s2">    </span><span class="si">%(PRECISION)s</span><span class="s2"> row3 = 0;</span>
+<span class="s2">  #endif</span>
 <span class="s2">    complex result(0.0,0.0);</span>
 <span class="s2">    if(iP &lt; </span><span class="si">%(P_RES)s</span><span class="s2"> &amp;&amp; iK &lt; </span><span class="si">%(K_RES)s</span><span class="s2">)</span>
 <span class="s2">    {</span>
 <span class="s2">      for(int i = 0; i &lt; </span><span class="si">%(NUM_SEM)s</span><span class="s2">; i++)</span>
 <span class="s2">      {</span>
 <span class="s2">        temp += k_mat[iK + i * </span><span class="si">%(K_RES)s</span><span class="s2">] * psi_mat[iP + i * </span><span class="si">%(P_RES)s</span><span class="s2">];</span>
-<span class="s2">//  #ifdef G_MAT</span>
-<span class="s2">//        row1 += k_mat[iK + i * </span><span class="si">%(K_RES)s</span><span class="s2">]</span>
-<span class="s2">//                * g_mat[iP + i * </span><span class="si">%(P_RES)s</span><span class="s2">];</span>
-<span class="s2">//        row2 += k_mat[iK + i * </span><span class="si">%(K_RES)s</span><span class="s2">]</span>
-<span class="s2">//                * g_mat[iP + i * </span><span class="si">%(P_RES)s</span><span class="s2"> +     </span><span class="si">%(P_RES)s</span><span class="s2"> * </span><span class="si">%(NUM_SEM)s</span><span class="s2">];</span>
-<span class="s2">//        row3 += k_mat[iK + i * </span><span class="si">%(K_RES)s</span><span class="s2">]</span>
-<span class="s2">//                * g_mat[iP + i * </span><span class="si">%(P_RES)s</span><span class="s2"> + 2 * </span><span class="si">%(P_RES)s</span><span class="s2"> * </span><span class="si">%(NUM_SEM)s</span><span class="s2">];</span>
-<span class="s2">//  #endif</span>
+<span class="s2">  #ifdef G_MAT</span>
+<span class="s2">        row1 += k_mat[iK + i * </span><span class="si">%(K_RES)s</span><span class="s2">]</span>
+<span class="s2">                * g_mat[iP + i * </span><span class="si">%(P_RES)s</span><span class="s2">];</span>
+<span class="s2">        row2 += k_mat[iK + i * </span><span class="si">%(K_RES)s</span><span class="s2">]</span>
+<span class="s2">                * g_mat[iP + i * </span><span class="si">%(P_RES)s</span><span class="s2"> +     </span><span class="si">%(P_RES)s</span><span class="s2"> * </span><span class="si">%(NUM_SEM)s</span><span class="s2">];</span>
+<span class="s2">        row3 += k_mat[iK + i * </span><span class="si">%(K_RES)s</span><span class="s2">]</span>
+<span class="s2">                * g_mat[iP + i * </span><span class="si">%(P_RES)s</span><span class="s2"> + 2 * </span><span class="si">%(P_RES)s</span><span class="s2"> * </span><span class="si">%(NUM_SEM)s</span><span class="s2">];</span>
+<span class="s2">  #endif</span>
 <span class="s2">      }</span>
-<span class="s2">//  #ifdef B0_MAT</span>
-<span class="s2">//      </span><span class="si">%(PRECISION)s</span><span class="s2"> b0_c = b0[iP] * ktime[iK];</span>
-<span class="s2">//  #endif</span>
-<span class="s2">//  #ifdef G_MAT</span>
-<span class="s2">//      result = complex(cos(temp), sin(-temp)) * sinc(</span><span class="si">%(W1)s</span><span class="s2"> * row1)</span>
-<span class="s2">//               * sinc(</span><span class="si">%(W2)s</span><span class="s2"> * row2) * sinc(</span><span class="si">%(W3)s</span><span class="s2"> * row3)</span>
-<span class="s2">//  #else</span>
-<span class="s2">//      result = complex(cos(temp), sin(-temp))</span>
-<span class="s2">//  #endif</span>
-<span class="s2">//  #ifdef B0_MAT</span>
-<span class="s2">//      / complex(cos(b0_c), sin(-b0_c));</span>
-<span class="s2">//  #else</span>
-<span class="s2">//      ;</span>
-<span class="s2">//  #endif</span>
+<span class="s2">  #ifdef B0_MAT</span>
+<span class="s2">      </span><span class="si">%(PRECISION)s</span><span class="s2"> b0_c = b0[iP] * ktime[iK];</span>
+<span class="s2">  #endif</span>
+<span class="s2">  #ifdef G_MAT</span>
+<span class="s2">      result = complex(cos(temp), sin(-temp)) * sinc(</span><span class="si">%(W1)s</span><span class="s2"> * row1)</span>
+<span class="s2">               * sinc(</span><span class="si">%(W2)s</span><span class="s2"> * row2) * sinc(</span><span class="si">%(W3)s</span><span class="s2"> * row3)</span>
+<span class="s2">  #else</span>
+<span class="s2">      result = complex(cos(temp), sin(-temp))</span>
+<span class="s2">  #endif</span>
+<span class="s2">  #ifdef B0_MAT</span>
+<span class="s2">      / complex(cos(b0_c), sin(-b0_c));</span>
+<span class="s2">  #else</span>
+<span class="s2">      ;</span>
+<span class="s2">  #endif</span>
 
 <span class="s2">      result = complex(cos(temp), sin(-temp));</span>
 <span class="s2">    }</span>
