@@ -9,6 +9,13 @@ ARTBOX documentation
 
 ARTBOX is a fast image reconstruction toolbox for magnetic resonance imaging (MRI).
 
+The operator implemented in this work allows you to incorporate B0 inhomogeneities, non-Cartesian trajectories and even non-linear encoding fields into MR image reconstruction/simulation. 
+It furthermore considers the reconstructed pixels to be box functions instead of Diracs. This makes it possible to model intra-voxel dephasing which may improve the conditioning of the inverse.
+
+Several image reconstruction methods (CG, TGV-regularization) are implemented.
+
+Note: Please be aware that parts of this software may be refactored and therefore the API may change.
+
 Features:
 
 * Conjugate gradients solver.
