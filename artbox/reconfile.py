@@ -93,8 +93,9 @@ class ReconData(object):
             recondata (np.ndarray): Measured/simulated data.
                 (shape = [nC, nT])
         """
-        self.recondata = recondata.astype(self.precision_complex).flatten()
-        #  self.recondata /= np.abs(self.recondata).max()
+        if recondata is not None:
+            self.recondata = recondata.astype(self.precision_complex).flatten()
+            #  self.recondata /= np.abs(self.recondata).max()
 
     def set_object(self, obj):
         """Set object needed for simulations.
@@ -103,7 +104,8 @@ class ReconData(object):
             obj (np.ndarray): Array used for forward simulations.
                 (shape = [nX1, nX2])
         """
-        self.object = obj.astype(self.precision_real).flatten()
+        if obj is not None:
+            self.object = obj.astype(self.precision_real).flatten()
 
     def set_weights(self, weights):
         """Set weights for spatially weighted Tikhonov regularization.
@@ -112,7 +114,8 @@ class ReconData(object):
             weights (np.ndarray): Spatial weighting in image space.
                 (shape = [nX1, nX2])
         """
-        self.weights = weights.astype(self.precision_real).flatten()
+        if weights is not None:
+            self.weights = weights.astype(self.precision_real).flatten()
 
     def set_traj(self, traj):
         """Set trajectory coordinates.
@@ -195,7 +198,8 @@ class ReconData(object):
         np.savez(fname, traj=self.k, weights=self.weights, SEM=self.psi,
                  Gmat=self.G_mat, w=self.w, b0=self.b0, ktime=self.ktime,
                  Cmat=self.c_mat, a_res=self.a_res, b_res=self.b_res,
-                 res0=self.nX1, res1=self.nX2)
+                 res0=self.nX1, res1=self.nX2, recondata=self.recondata,
+                 object=self.object)
 
 
 def load_matlab_dataset(filename, double=False):
@@ -328,3 +332,35 @@ def load_matlab_dataset(filename, double=False):
             print('ERROR: Either recondata or object needs to be provided!')
             exit()
     return data
+
+
+def load_numpy_dataset(filename, double=False):
+    if not filename.endswith('.npz'):
+        raise IOError("File must be .npz")
+
+    data = ReconData(double=double)
+
+    with np.load(filename) as data:
+        # SEM
+        data.set_SEM(data['SEM'])
+
+        # Trajectory
+        data.set_traj(data['traj'])
+
+        # B0 inhomogeneity map
+        data.set_b0(data.get('b0'), data.get('ktime'))
+
+        # G_mat and weights
+        data.set_Gmat(data.get('Gmat'), data.get('w'))
+
+        # Tikhonov weights
+        data.set_weights(data.get('weights'))
+
+        # RF coil sensitivity maps
+        data.set_Cmat(data['Cmat'])
+
+        # data
+        data.set_recondata(data.get('recondata'))
+
+        # object
+        data.set_recondata(data.get('object'))
