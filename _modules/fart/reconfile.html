@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>artbox.reconfile &#8212; ARTBOX 0.1.0 documentation</title>
+    <title>fart.reconfile &#8212; FART 0.1.0 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -39,7 +39,7 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <h1>Source code for artbox.reconfile</h1><div class="highlight"><pre>
+  <h1>Source code for fart.reconfile</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Copyright 2018 Stefan Kroboth</span>
 <span class="c1">#</span>
 <span class="c1"># Licensed under the Apache License, Version 2.0 &lt;LICENSE-APACHE or</span>
@@ -68,7 +68,7 @@
 <span class="c1"># pylint: disable=bare-except</span>
 
 
-<div class="viewcode-block" id="ReconData"><a class="viewcode-back" href="../../reconfile.html#artbox.reconfile.ReconData">[docs]</a><span class="k">class</span> <span class="nc">ReconData</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="ReconData"><a class="viewcode-back" href="../../reconfile.html#fart.reconfile.ReconData">[docs]</a><span class="k">class</span> <span class="nc">ReconData</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Holds all the data needed for reconstructions/simulations</span>
 
 <span class="sd">    Args:</span>
@@ -128,38 +128,35 @@
         <span class="c1">#: Product of nX1 and nX2 + padding such that p_res32 % 32 == 0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">p_res32</span> <span class="o">=</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="ReconData.set_recondata"><a class="viewcode-back" href="../../reconfile.html#artbox.reconfile.ReconData.set_recondata">[docs]</a>    <span class="k">def</span> <span class="nf">set_recondata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recondata</span><span class="p">):</span>
+<div class="viewcode-block" id="ReconData.set_recondata"><a class="viewcode-back" href="../../reconfile.html#fart.reconfile.ReconData.set_recondata">[docs]</a>    <span class="k">def</span> <span class="nf">set_recondata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recondata</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set measured/simulated data needed for reconstructions.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            recondata (np.ndarray): Measured/simulated data.</span>
 <span class="sd">                (shape = [nC, nT])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">recondata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">recondata</span> <span class="o">=</span> <span class="n">recondata</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span></div>
-            <span class="c1">#  self.recondata /= np.abs(self.recondata).max()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recondata</span> <span class="o">=</span> <span class="n">recondata</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span></div>
+        <span class="c1">#  self.recondata /= np.abs(self.recondata).max()</span>
 
-<div class="viewcode-block" id="ReconData.set_object"><a class="viewcode-back" href="../../reconfile.html#artbox.reconfile.ReconData.set_object">[docs]</a>    <span class="k">def</span> <span class="nf">set_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+<div class="viewcode-block" id="ReconData.set_object"><a class="viewcode-back" href="../../reconfile.html#fart.reconfile.ReconData.set_object">[docs]</a>    <span class="k">def</span> <span class="nf">set_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set object needed for simulations.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            obj (np.ndarray): Array used for forward simulations.</span>
 <span class="sd">                (shape = [nX1, nX2])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">object</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_real</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">object</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_real</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="ReconData.set_weights"><a class="viewcode-back" href="../../reconfile.html#artbox.reconfile.ReconData.set_weights">[docs]</a>    <span class="k">def</span> <span class="nf">set_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
+<div class="viewcode-block" id="ReconData.set_weights"><a class="viewcode-back" href="../../reconfile.html#fart.reconfile.ReconData.set_weights">[docs]</a>    <span class="k">def</span> <span class="nf">set_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set weights for spatially weighted Tikhonov regularization.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            weights (np.ndarray): Spatial weighting in image space.</span>
 <span class="sd">                (shape = [nX1, nX2])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_real</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_real</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="ReconData.set_traj"><a class="viewcode-back" href="../../reconfile.html#artbox.reconfile.ReconData.set_traj">[docs]</a>    <span class="k">def</span> <span class="nf">set_traj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traj</span><span class="p">):</span>
+<div class="viewcode-block" id="ReconData.set_traj"><a class="viewcode-back" href="../../reconfile.html#fart.reconfile.ReconData.set_traj">[docs]</a>    <span class="k">def</span> <span class="nf">set_traj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traj</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set trajectory coordinates.</span>
 
 <span class="sd">        Args:</span>
@@ -169,7 +166,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="n">traj</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_real</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nT</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">traj</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span></div>
 
-<div class="viewcode-block" id="ReconData.set_SEM"><a class="viewcode-back" href="../../reconfile.html#artbox.reconfile.ReconData.set_SEM">[docs]</a>    <span class="k">def</span> <span class="nf">set_SEM</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">SEM</span><span class="p">):</span>
+<div class="viewcode-block" id="ReconData.set_SEM"><a class="viewcode-back" href="../../reconfile.html#fart.reconfile.ReconData.set_SEM">[docs]</a>    <span class="k">def</span> <span class="nf">set_SEM</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">SEM</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set encoding fields.</span>
 
 <span class="sd">        Args:</span>
@@ -189,7 +186,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">nX1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nX2</span><span class="p">),</span>
                                     <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="ReconData.set_Gmat"><a class="viewcode-back" href="../../reconfile.html#artbox.reconfile.ReconData.set_Gmat">[docs]</a>    <span class="k">def</span> <span class="nf">set_Gmat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Gmat</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
+<div class="viewcode-block" id="ReconData.set_Gmat"><a class="viewcode-back" href="../../reconfile.html#fart.reconfile.ReconData.set_Gmat">[docs]</a>    <span class="k">def</span> <span class="nf">set_Gmat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Gmat</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set G_mat which holds the derivatives of the encoding fields for the</span>
 <span class="sd">        dephasing model.</span>
 
@@ -204,7 +201,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">G_mat</span> <span class="o">=</span> <span class="n">Gmat</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_real</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">w</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_real</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="ReconData.set_b0"><a class="viewcode-back" href="../../reconfile.html#artbox.reconfile.ReconData.set_b0">[docs]</a>    <span class="k">def</span> <span class="nf">set_b0</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b0</span><span class="p">,</span> <span class="n">ktime</span><span class="p">):</span>
+<div class="viewcode-block" id="ReconData.set_b0"><a class="viewcode-back" href="../../reconfile.html#fart.reconfile.ReconData.set_b0">[docs]</a>    <span class="k">def</span> <span class="nf">set_b0</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b0</span><span class="p">,</span> <span class="n">ktime</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set B0 map (field inhomogeneity)</span>
 
 <span class="sd">        Args:</span>
@@ -217,7 +214,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">b0</span> <span class="o">=</span> <span class="n">b0</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_real</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">ktime</span> <span class="o">=</span> <span class="n">ktime</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_real</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ReconData.set_Cmat"><a class="viewcode-back" href="../../reconfile.html#artbox.reconfile.ReconData.set_Cmat">[docs]</a>    <span class="k">def</span> <span class="nf">set_Cmat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Cmat</span><span class="p">):</span>
+<div class="viewcode-block" id="ReconData.set_Cmat"><a class="viewcode-back" href="../../reconfile.html#fart.reconfile.ReconData.set_Cmat">[docs]</a>    <span class="k">def</span> <span class="nf">set_Cmat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Cmat</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set RF sensitiviy maps</span>
 
 <span class="sd">        Args:</span>
@@ -227,7 +224,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">nC</span> <span class="o">=</span> <span class="n">Cmat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">c_mat</span> <span class="o">=</span> <span class="n">Cmat</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision_complex</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="ReconData.save"><a class="viewcode-back" href="../../reconfile.html#artbox.reconfile.ReconData.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<div class="viewcode-block" id="ReconData.save"><a class="viewcode-back" href="../../reconfile.html#fart.reconfile.ReconData.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Save all data to `directory/name.npz`</span>
 
 <span class="sd">        Args:</span>
@@ -240,11 +237,10 @@
         <span class="n">np</span><span class="o">.</span><span class="n">savez</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">traj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">SEM</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">psi</span><span class="p">,</span>
                  <span class="n">Gmat</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">G_mat</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="n">b0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b0</span><span class="p">,</span> <span class="n">ktime</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ktime</span><span class="p">,</span>
                  <span class="n">Cmat</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mat</span><span class="p">,</span> <span class="n">a_res</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">a_res</span><span class="p">,</span> <span class="n">b_res</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b_res</span><span class="p">,</span>
-                 <span class="n">res0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nX1</span><span class="p">,</span> <span class="n">res1</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nX2</span><span class="p">,</span> <span class="n">recondata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">recondata</span><span class="p">,</span>
-                 <span class="nb">object</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">object</span><span class="p">)</span></div></div>
+                 <span class="n">res0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nX1</span><span class="p">,</span> <span class="n">res1</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nX2</span><span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="load_matlab_dataset"><a class="viewcode-back" href="../../reconfile.html#artbox.reconfile.load_matlab_dataset">[docs]</a><span class="k">def</span> <span class="nf">load_matlab_dataset</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="load_matlab_dataset"><a class="viewcode-back" href="../../reconfile.html#fart.reconfile.load_matlab_dataset">[docs]</a><span class="k">def</span> <span class="nf">load_matlab_dataset</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Load a Matlab struct</span>
 
 <span class="sd">    The structs name must be `S` and it&#39;s format is expected to be:</span>
@@ -362,8 +358,6 @@
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># aquired data</span>
         <span class="n">recondata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mat</span><span class="o">.</span><span class="n">recondata</span><span class="p">)</span>
-        <span class="n">recondata</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">recondata</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-        <span class="n">data</span><span class="o">.</span><span class="n">set_recondata</span><span class="p">(</span><span class="n">recondata</span><span class="p">)</span>
     <span class="k">except</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Seems like you are trying to simulate?&#39;</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
@@ -373,89 +367,9 @@
         <span class="k">except</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ERROR: Either recondata or object needs to be provided!&#39;</span><span class="p">)</span>
             <span class="n">exit</span><span class="p">()</span>
+    <span class="n">recondata</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">recondata</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">set_recondata</span><span class="p">(</span><span class="n">recondata</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">data</span></div>
-
-
-<div class="viewcode-block" id="load_numpy_dataset"><a class="viewcode-back" href="../../reconfile.html#artbox.reconfile.load_numpy_dataset">[docs]</a><span class="k">def</span> <span class="nf">load_numpy_dataset</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Load a numpy dataset (.npz)</span>
-
-<span class="sd">    The following fields must be present and must have the following formats:</span>
-
-<span class="sd">        k: [nF, nT]</span>
-
-<span class="sd">        SEM: [nF, nX1, nX2]</span>
-
-<span class="sd">        Cmat: [nC, nX1, nX2]</span>
-
-<span class="sd">        b0: [nX1, nX2]</span>
-
-<span class="sd">        ktime: [1, nT]</span>
-
-<span class="sd">        Gmat: [nF, nX1, nX2, 3]</span>
-
-<span class="sd">        w: [3, 1]</span>
-
-<span class="sd">        regularization_weights: [nX1, nX2]</span>
-
-<span class="sd">        As well as one of the following two:</span>
-
-<span class="sd">        recondata: [nC, nT]</span>
-
-<span class="sd">        object: [nX1, nX2]</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        filename (str): File to load (must end in .npz).</span>
-<span class="sd">        double (bool): Whether or not everything should be double or single</span>
-<span class="sd">            precision.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.npz&#39;</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;File must be .npz&quot;</span><span class="p">)</span>
-
-    <span class="n">data</span> <span class="o">=</span> <span class="n">ReconData</span><span class="p">(</span><span class="n">double</span><span class="o">=</span><span class="n">double</span><span class="p">)</span>
-
-    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">data</span><span class="p">:</span>
-        <span class="c1"># SEM</span>
-        <span class="n">data</span><span class="o">.</span><span class="n">set_SEM</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;SEM&#39;</span><span class="p">])</span>
-
-        <span class="c1"># Trajectory</span>
-        <span class="n">data</span><span class="o">.</span><span class="n">set_traj</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;traj&#39;</span><span class="p">])</span>
-
-        <span class="c1"># B0 inhomogeneity map</span>
-        <span class="n">data</span><span class="o">.</span><span class="n">set_b0</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;b0&#39;</span><span class="p">),</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ktime&#39;</span><span class="p">))</span>
-
-        <span class="c1"># G_mat and weights</span>
-        <span class="n">data</span><span class="o">.</span><span class="n">set_Gmat</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Gmat&#39;</span><span class="p">),</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;w&#39;</span><span class="p">))</span>
-
-        <span class="c1"># Tikhonov weights</span>
-        <span class="n">data</span><span class="o">.</span><span class="n">set_weights</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;weights&#39;</span><span class="p">))</span>
-
-        <span class="c1"># RF coil sensitivity maps</span>
-        <span class="n">data</span><span class="o">.</span><span class="n">set_Cmat</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;Cmat&#39;</span><span class="p">])</span>
-
-        <span class="c1"># data</span>
-        <span class="n">data</span><span class="o">.</span><span class="n">set_recondata</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;recondata&#39;</span><span class="p">))</span>
-
-        <span class="c1"># object</span>
-        <span class="n">data</span><span class="o">.</span><span class="n">set_recondata</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;object&#39;</span><span class="p">))</span></div>
-
-
-<div class="viewcode-block" id="load_dataset"><a class="viewcode-back" href="../../reconfile.html#artbox.reconfile.load_dataset">[docs]</a><span class="k">def</span> <span class="nf">load_dataset</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Load a .mat or .npz dataset.</span>
-
-<span class="sd">    See docstring of `load_matlab_dataset` and `load_numpy_dataset` for</span>
-<span class="sd">    detailed information.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        filename (str): File to load (must end in .npz or .mat).</span>
-<span class="sd">        double (bool): Whether or not everything should be double or single</span>
-<span class="sd">            precision.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.npz&#39;</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">load_numpy_dataset</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="n">double</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.mat&#39;</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">load_matlab_dataset</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="n">double</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;Wrong file format.&quot;</span><span class="p">)</span> </div>
 </pre></div>
 
           </div>
@@ -463,25 +377,17 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../../index.html">ARTBOX</a></h1>
+<h1 class="logo"><a href="../../index.html">FART</a></h1>
 
 
 
-<p class="blurb">Accelerated Reconstruction Toolbox for MRI</p>
-
-
-
-
-<p>
-<iframe src="https://ghbtns.com/github-btn.html?user=stefan-k&repo=ARTBOX&type=watch&count=true&size=large&v=2"
-  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
-</p>
 
 
 
 
 
 <h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../reconfile.html">ReconData</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../operators.html">Operators</a></li>
@@ -523,10 +429,6 @@
       
     </div>
 
-    
-    <a href="https://github.com/stefan-k/ARTBOX" class="github">
-        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
-    </a>
     
 
     

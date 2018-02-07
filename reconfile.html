@@ -323,6 +323,27 @@ shape = [nX1, nX2]</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="artbox.reconfile.load_dataset">
+<code class="descclassname">artbox.reconfile.</code><code class="descname">load_dataset</code><span class="sig-paren">(</span><em>filename</em>, <em>double=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#load_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.load_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a .mat or .npz dataset.</p>
+<p>See docstring of <cite>load_matlab_dataset</cite> and <cite>load_numpy_dataset</cite> for
+detailed information.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> (<em>str</em>) – File to load (must end in .npz or .mat).</li>
+<li><strong>double</strong> (<em>bool</em>) – Whether or not everything should be double or single
+precision.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="artbox.reconfile.load_matlab_dataset">
 <code class="descclassname">artbox.reconfile.</code><code class="descname">load_matlab_dataset</code><span class="sig-paren">(</span><em>filename</em>, <em>double=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#load_matlab_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.load_matlab_dataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load a Matlab struct</p>
@@ -347,6 +368,39 @@ shape = [nX1, nX2]</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>filename</strong> (<em>str</em>) – File to load.</li>
+<li><strong>double</strong> (<em>bool</em>) – Whether or not everything should be double or single
+precision.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="artbox.reconfile.load_numpy_dataset">
+<code class="descclassname">artbox.reconfile.</code><code class="descname">load_numpy_dataset</code><span class="sig-paren">(</span><em>filename</em>, <em>double=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/artbox/reconfile.html#load_numpy_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#artbox.reconfile.load_numpy_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a numpy dataset (.npz)</p>
+<p>The following fields must be present and must have the following formats:</p>
+<blockquote>
+<div><p>k: [nF, nT]</p>
+<p>SEM: [nF, nX1, nX2]</p>
+<p>Cmat: [nC, nX1, nX2]</p>
+<p>b0: [nX1, nX2]</p>
+<p>ktime: [1, nT]</p>
+<p>Gmat: [nF, nX1, nX2, 3]</p>
+<p>w: [3, 1]</p>
+<p>regularization_weights: [nX1, nX2]</p>
+<p>As well as one of the following two:</p>
+<p>recondata: [nC, nT]</p>
+<p>object: [nX1, nX2]</p>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> (<em>str</em>) – File to load (must end in .npz).</li>
 <li><strong>double</strong> (<em>bool</em>) – Whether or not everything should be double or single
 precision.</li>
 </ul>
