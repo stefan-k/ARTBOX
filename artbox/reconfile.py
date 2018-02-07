@@ -409,8 +409,8 @@ def load_dataset(filename, double=False):
             precision.
     """
     if filename.endswith('.npz'):
-        load_numpy_dataset(filename, double=double)
+        return load_numpy_dataset(filename, double=double)
     elif filename.endswith('.mat'):
-        load_matlab_dataset(filename, double=double)
+        return load_matlab_dataset(filename, double=double)
     else:
         raise IOError("Wrong file format.") 
