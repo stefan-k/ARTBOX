@@ -335,6 +335,37 @@ def load_matlab_dataset(filename, double=False):
 
 
 def load_numpy_dataset(filename, double=False):
+    """Load a numpy dataset (.npz)
+
+    The following fields must be present and must have the following formats:
+
+        k: [nF, nT]
+
+        SEM: [nF, nX1, nX2]
+
+        Cmat: [nC, nX1, nX2]
+
+        b0: [nX1, nX2]
+
+        ktime: [1, nT]
+
+        Gmat: [nF, nX1, nX2, 3]
+
+        w: [3, 1]
+
+        regularization_weights: [nX1, nX2]
+
+        As well as one of the following two:
+
+        recondata: [nC, nT]
+
+        object: [nX1, nX2]
+
+    Args:
+        filename (str): File to load (must end in .npz).
+        double (bool): Whether or not everything should be double or single
+            precision.
+    """
     if not filename.endswith('.npz'):
         raise IOError("File must be .npz")
 
