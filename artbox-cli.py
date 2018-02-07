@@ -59,10 +59,10 @@ def main():
             print("Processing file " + dfile + " ...")
 
         # create directory based on filename
-        if dfile[-4:] == '.mat':
+        if dfile.endswith('.mat') or dfile.endswith('.npz'):
             out_dir = out + "/" + os.path.basename(dfile)[:-4]
         else:
-            out_dir = out + "/" + dfile
+            raise IOError("Wrong file format.")
 
 ###############################################################################
 # APPLY FORWARD MODEL                                                         #
