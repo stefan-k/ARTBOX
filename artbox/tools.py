@@ -48,7 +48,7 @@ def query_yes_no(question, default="yes"):
 
     while 1:
         sys.stdout.write(question + prompt)
-        choice = raw_input().lower()
+        choice = input().lower()
         if default is not None and choice == '':
             return default
         elif choice in valid.keys():
@@ -58,7 +58,7 @@ def query_yes_no(question, default="yes"):
 
 
 def create_dir(dir_name, skip_question=True, default="no",
-               question="Directory already exists and files may be" +
+               question="Directory already exists and files may be " +
                "overwritten. Proceed?"):
     """Convenience function for creating a directory.
 
