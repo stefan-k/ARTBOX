@@ -402,7 +402,7 @@ def load_dataset(filename, double=False):
 
     See docstring of `load_matlab_dataset` and `load_numpy_dataset` for
     detailed information.
-    
+
     Args:
         filename (str): File to load (must end in .npz or .mat).
         double (bool): Whether or not everything should be double or single
