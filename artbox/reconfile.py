@@ -395,3 +395,22 @@ def load_numpy_dataset(filename, double=False):
 
         # object
         data.set_recondata(data.get('object'))
+
+
+def load_dataset(filename, double=False):
+    """Load a .mat or .npz dataset.
+
+    See docstring of `load_matlab_dataset` and `load_numpy_dataset` for
+    detailed information.
+    
+    Args:
+        filename (str): File to load (must end in .npz or .mat).
+        double (bool): Whether or not everything should be double or single
+            precision.
+    """
+    if filename.endswith('.npz'):
+        load_numpy_dataset(filename, double=double)
+    elif filename.endswith('.mat'):
+        load_matlab_dataset(filename, double=double)
+    else:
+        raise IOError("Wrong file format.") 
