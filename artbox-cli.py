@@ -22,7 +22,7 @@ from artbox.parser import args, parser
 from time import time
 os.environ['CUDA_DEVICE'] = str(args.gpu)
 import pycuda.autoinit
-from artbox.reconfile import load_matlab_dataset
+from artbox.reconfile import load_dataset
 from artbox.operators import Operator
 from artbox.cg import CG
 from artbox.tgv import tgv
@@ -77,7 +77,7 @@ def main():
             if args.verbose:
                 print("Loading Data...")
 
-            data = load_matlab_dataset(dfile, double=args.double)
+            data = load_dataset(dfile, double=args.double)
 
             if args.verbose:
                 print("Building Operator...")
@@ -132,7 +132,7 @@ def main():
                 print("Loading Data...")
 
             loading_time = time()
-            data = load_matlab_dataset(dfile, double=args.double)
+            data = load_dataset(dfile, double=args.double)
             print("Loading time: " + str(time() - loading_time) + " seconds")
 
             if args.time_operator:
@@ -195,7 +195,7 @@ def main():
             if args.verbose:
                 print("Loading Data...")
 
-            data = load_matlab_dataset(dfile, double=args.double)
+            data = load_dataset(dfile, double=args.double)
 
             if args.time_operator:
                 operator_time = time()
@@ -261,7 +261,7 @@ def main():
             if args.verbose:
                 print("Loading Data...")
 
-            data = load_matlab_dataset(dfile, double=args.double)
+            data = load_dataset(dfile, double=args.double)
 
             if args.time_operator:
                 operator_time = time()
@@ -325,7 +325,7 @@ def main():
             if args.verbose:
                 print("Loading Data...")
 
-            data = load_matlab_dataset(dfile, double=args.double)
+            data = load_dataset(dfile, double=args.double)
 
             if args.time_operator:
                 operator_time = time()
