@@ -26,7 +26,7 @@ from artbox.reconfile import load_dataset
 from artbox.operators import Operator
 from artbox.cg import CG
 from artbox.tgv import tgv
-from artbox.tools import create_dir, gpu_info
+from artbox.tools import create_dir, gpu_info, save_matlab
 
 
 def main():
@@ -107,7 +107,6 @@ def main():
 
             import pycuda.gpuarray as gpuarray
             import numpy as np
-            from tools import save_matlab
             result = gpuarray.zeros([data.nT, data.nC], np.complex64,
                                     order='F')
             op.apply(gpuarray.to_gpu(data.object.astype(np.complex64)), result)

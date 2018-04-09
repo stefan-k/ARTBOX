@@ -126,7 +126,7 @@ def tgv(op, out_dir, alpha=4e-5, tau_p=0.625, tau_d=0.125, reduction=2**-8,
     wold = gpuarray.empty_like(w)
 
     if cg:
-        from cg import InnerCG
+        from artbox.cg import InnerCG
         tmp_EHs = None
         tau_p = 1.0/norm_est
         tau_d = 1.0/tau_p/(0.5*(17+np.sqrt(33)))
