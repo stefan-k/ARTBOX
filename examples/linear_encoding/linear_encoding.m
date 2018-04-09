@@ -89,11 +89,13 @@ S.object = phantom(sim_res);
 
 
 % Save the data. This must be in the v7 file format!
+disp('Saving simustruct.mat');
 save('simustruct.mat', 'S', '-v7');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Run simulation using ARTBOX
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp('Running simulation using ARTBOX');
 r = system(['python ' artbox ' --forward -o ' tmp_dir '/simu --gpu '...
             num2str(gpu_num) ' simustruct.mat -sm -y']);
 
@@ -136,13 +138,14 @@ S.recondata = sim_data.';
 
 
 % Save the data. This must be in the v7 file format!
+disp('Saving reconstruct.mat');
 save('reconstruct.mat', 'S', '-v7');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Run reconstruction using ARTBOX
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 r = system(['python ' artbox ' --cg -o ' tmp_dir '/recon --gpu '...
-            num2str(gpu_num) ' reconstruct.mat -y -i 50']);
+            num2str(gpu_num) ' reconstruct.mat -y -sm -i 50']);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Load and show reconstructed images 
@@ -152,3 +155,4 @@ recon_data = recon.img_result;
 
 figure;
 imshow(abs(recon_data), []);
+title('Image reconstructed from simulated data');
