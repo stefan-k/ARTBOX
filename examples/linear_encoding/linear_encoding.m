@@ -77,7 +77,7 @@ Gmat(2, :, :, 2) = 1;
 % Create struct 'S'. Be aware that it has to be 'S'!
 S = struct;
 % S.k: [nF, nT]  # k-space trajectory
-S.k = traj_lin;
+S.k = 2*pi*traj_lin;
 % S.Cmat: [nC, nX1, nX2]  # RF coil sensitivity maps
 S.Cmat = rf;
 % S.SEM: [nF, nX1, nX2]  # spatial magnetic encoding fields
@@ -126,7 +126,7 @@ Gmat(2, :, :, 2) = 1;
 % Create struct 'S'. Be aware that it has to be 'S'!
 S = struct;
 % S.k: [nF, nT]  # k-space trajectory
-S.k = traj_lin;
+S.k = 2*pi*traj_lin;
 % S.Cmat: [nC, nX1, nX2]  # RF coil sensitivity maps
 S.Cmat = rf;
 % S.SEM: [nF, nX1, nX2]  # spatial magnetic encoding fields
