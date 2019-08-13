@@ -126,7 +126,7 @@ def save_matlab(img, out_dir, name):
         name (str): Filename.
     """
     create_dir(out_dir + "/mat")
-    savemat(out_dir + "/mat/img_" + str(name),
+    savemat(out_dir + "/mat/img_" + str(name) + ".mat",
             dict({"img_" + str(name): img}), oned_as='row')
 
 
